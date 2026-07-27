@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DNA da Folha</title>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --b:#f4f6fa;
+  --c:#fff;
+  --i:#172033;
+  --m:#6b7280;
+  --l:#e5e7eb;
+  --a:#1d4ed8;
+  --s:#eef2ff;
+  --g:#15803d;
+  --r:#b91c1c
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font:13px Arial;
+  background:var(--b);
+  color:var(--i)
+}
+
+header{
+  background:var(--c);
+  border-bottom:1px solid var(--l);
+  padding:14px 22px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center
+}
+
+h1{
+  font-size:20px;
+  margin:0;
+  color:var(--a)
+}
+
+small{color:var(--m)}
+
+nav{
+  display:flex;
+  gap:6px
+}
+
+button,select,input{font:inherit}
+
+button{
+  border:1px solid var(--l);
+  background:#fff;
+  border-radius:9px;
+  padding:7px 11px;
+  cursor:pointer;
+  font-weight:700
+}
+
+button.on,.primary{
+  background:var(--a);
+  color:white;
+  border-color:var(--a)
+}
+
+main{
+  padding:14px 22px;
+  max-width:1700px;
+  margin:auto
+}
+
+.bar,.box{
+  background:var(--c);
+  border:1px solid var(--l);
+  border-radius:13px;
+  padding:12px;
+  margin-bottom:11px
+}
+
+.bar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:end
+}
+
+.f{
+  display:flex;
+  flex-direction:column;
+  gap:4px
+}
+
+.f label{
+  font-size:10px;
+  text-transform:uppercase;
+  color:var(--m);
+  font-weight:700
+}
+
+.f select,.f input{
+  padding:7px 9px;
+  border:1px solid var(--l);
+  border-radius:8px;
+  min-width:180px
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-bottom:11px
+}
+
+.card{
+  background:var(--c);
+  border:1px solid var(--l);
+  border-radius:13px;
+  padding:13px
+}
+
+.card b{
+  display:block;
+  font-size:10px;
+  text-transform:uppercase;
+  color:var(--m);
+  margin-bottom:6px
+}
+
+.v{
+  font-size:21px;
+  font-weight:800
+}
+
+.sub{
+  font-size:11px;
+  color:var(--m);
+  margin-top:5px
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:11px
+}
+
+h2{
+  font-size:15px;
+  margin:0 0 10px
+}
+
+.scroll{
+  overflow:auto;
+  max-height:520px;
+  border:1px solid var(--l);
+  border-radius:9px
+}
+
+table{
+  border-collapse:collapse;
+  width:100%;
+  min-width:760px
+}
+
+th,td{
+  padding:8px 9px;
+  border-bottom:1px solid #eef1f5;
+  text-align:right;
+  white-space:nowrap
+}
+
+th{
+  background:#f8fafc;
+  position:sticky;
+  top:0;
+  font-size:10px;
+  text-transform:uppercase;
+  color:#475569
+}
+
+th:first-child,td:first-child{
+  text-align:left
+}
+
+.total{
+  font-weight:800;
+  background:var(--s)
+}
+
+.good{color:var(--g)}
+.bad{color:var(--r)}
+
+.msg{
+  text-align:center;
+  padding:35px;
+  color:var(--m)
+}
+
+.prog{
+  height:9px;
+  background:#e5e7eb;
+  border-radius:99px;
+  overflow:hidden;
+  margin:12px auto;
+  max-width:520px
+}
+
+.prog i{
+  display:block;
+  height:100%;
+  width:0;
+  background:var(--a)
+}
+
+.form{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px
+}
+
+.note{
+  padding:10px;
+  background:var(--s);
+  border-radius:9px;
+  line-height:1.5;
+  margin-bottom:10px
+}
+
+.hide{display:none}
+
+@media(max-width:1000px){
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .grid{grid-template-columns:1fr}
+  .form{grid-template-columns:repeat(2,1fr)}
+}
+
+@media(max-width:600px){
+  main,header{
+    padding-left:10px;
+    padding-right:10px
+  }
+
+  .cards,.form{
+    grid-template-columns:1fr
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div>
+    <h1>DNA da Folha</h1>
+    <small>Pessoas, custo e eficiência por loja e departamento</small>
+  </div>
+
+  <nav>
+    <button id="bd" class="on">Dashboard</button>
+    <button id="bp">Parametrização</button>
+  </nav>
+</header>
+
+<main>
+
+<section id="load" class="box">
+  <div class="msg">
+    Lendo as folhas mensais…
+
+    <div class="prog">
+      <i id="pg"></i>
+    </div>
+
+    <span id="pt"></span>
+  </div>
+</section>
+
+<section id="dash" class="hide">
+
+  <div class="bar">
+
+    <div class="f">
+      <label>Competência</label>
+      <select id="mes"></select>
+    </div>
+
+    <div class="f">
+      <label>Loja</label>
+      <select id="loja"></select>
+    </div>
+
+    <div class="f">
+      <label>Departamento</label>
+      <select id="dep"></select>
+    </div>
+
+    <button id="limpar">Limpar filtros</button>
+
+    <small id="status"></small>
+
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="grid">
+
+    <div class="box">
+
+      <h2>Resumo por loja</h2>
+
+      <div class="scroll">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Loja</th>
+              <th>Funcionários</th>
+              <th>Salário médio</th>
+              <th>Vencimentos</th>
+              <th>Custo econômico</th>
+              <th>Custo/func.</th>
+            </tr>
+          </thead>
+
+          <tbody id="tloja"></tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+    <div class="box">
+
+      <h2>Resumo por departamento</h2>
+
+      <div class="scroll">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Departamento</th>
+              <th>Funcionários</th>
+              <th>Salário médio</th>
+              <th>Vencimentos</th>
+              <th>Custo econômico</th>
+              <th>Custo/func.</th>
+            </tr>
+          </thead>
+
+          <tbody id="tdep"></tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<section id="param" class="hide">
+
+  <div class="box">
+
+    <h2>Parâmetros de custo</h2>
+
+    <div class="note">
+      Percentuais usados para estimar encargos e provisões.
+      Nesta primeira versão são globais. Depois cadastraremos
+      vigência e regras específicas por CNPJ e loja.
+    </div>
+
+    <div class="form" id="form"></div>
+
+    <button id="salvar" class="primary">
+      Salvar parâmetros
+    </button>
+
+  </div>
+
+</section>
+
+</main>
+
+<script>
+const BASE =
+  'https://raw.githubusercontent.com/elder901/Folha/main/';
+
+const F = [
+  ['2025-06','BI Por departamento/2025/06 2025.xlsx'],
+  ['2025-07','BI Por departamento/2025/07 2025.xlsx'],
+  ['2025-08','BI Por departamento/2025/08 2025.xlsx'],
+  ['2025-09','BI Por departamento/2025/09 2025.xlsx'],
+  ['2025-10','BI Por departamento/2025/10 2025.xlsx'],
+  ['2025-11','BI Por departamento/2025/11 2025.xlsx'],
+  ['2025-12','BI Por departamento/2025/12 2025.xlsx'],
+  ['2026-01','BI Por departamento/2026/01 2026.xlsx'],
+  ['2026-02','BI Por departamento/2026/02 2026.xlsx'],
+  ['2026-03','BI Por departamento/2026/03 2026.xlsx'],
+  ['2026-04','BI Por departamento/2026/04 2026.xlsx'],
+  ['2026-05','BI Por departamento/2026/05 2026.xlsx'],
+  ['2026-06','BI Por departamento/2026/06 2026.xlsx']
+];
+
+let D = [];
+
+let P = Object.assign(
+  {
+    inss:20,
+    rat:2,
+    fap:1,
+    terceiros:5.8,
+    fgts:8,
+    p13:8.3333,
+    pferias:8.3333,
+    pterco:2.7778
+  },
+  JSON.parse(localStorage.getItem('folhaParam') || '{}')
+);
+
+const $ = id => document.getElementById(id);
+
+const n = valor => {
+  if(typeof valor === 'number'){
+    return valor;
+  }
+
+  let texto = String(valor || '')
+    .trim()
+    .replace(/\s/g,'');
+
+  if(texto.includes(',') && texto.includes('.')){
+    texto = texto
+      .replace(/\./g,'')
+      .replace(',','.');
+  }else{
+    texto = texto.replace(',','.');
+  }
+
+  return Number(texto) || 0;
+};
+
+const txt = valor =>
+  String(valor || '').trim();
+
+const brl = valor =>
+  valor.toLocaleString(
+    'pt-BR',
+    {
+      style:'currency',
+      currency:'BRL'
+    }
+  );
+
+const num = valor =>
+  valor.toLocaleString('pt-BR');
+
+const url = caminho =>
+  BASE +
+  caminho
+    .split('/')
+    .map(encodeURIComponent)
+    .join('/');
+
+const name = texto =>
+  txt(texto).replace(/^[^ ]+\s*-\s*/,'');
+
+const rub = (registro,nomeRubrica) =>
+  registro.rub === nomeRubrica;
+
+async function load(){
+
+  for(let i = 0; i < F.length; i++){
+
+    const [competencia,caminho] = F[i];
+
+    $('pt').textContent =
+      `${i + 1}/${F.length} · ${competencia}`;
+
+    try{
+
+      const resposta = await fetch(url(caminho));
+
+      if(!resposta.ok){
+        throw new Error(
+          `Erro HTTP ${resposta.status}`
+        );
+      }
+
+      const arquivo =
+        await resposta.arrayBuffer();
+
+      const workbook =
+        XLSX.read(arquivo);
+
+      const planilha =
+        workbook.Sheets[
+          workbook.SheetNames[0]
+        ];
+
+      const linhas =
+        XLSX.utils.sheet_to_json(
+          planilha,
+          {
+            defval:'',
+            raw:false
+          }
+        );
+
+      linhas.forEach(linha => {
+
+        D.push({
+          c:competencia,
+          emp:txt(linha.Empresa),
+          loja:txt(linha.Estabelecimento),
+          ct:txt(linha.Contrato),
+          dep:txt(linha.Setor),
+          tipo:txt(linha['Tipo de Folha']),
+          q:n(linha['Horas/Quantidade ou Valor']),
+          v:n(linha.Valor),
+          rub:txt(linha.Rubrica)
+        });
+
+      });
+
+    }catch(erro){
+
+      console.error(
+        caminho,
+        erro
+      );
+
+    }
+
+    $('pg').style.width =
+      ((i + 1) / F.length * 100) + '%';
+  }
+
+  init();
+}
+
+function init(){
+
+  const meses = [
+    ...new Set(
+      D.map(item => item.c)
+    )
+  ].sort();
+
+  const lojas = [
+    ...new Set(
+      D
+        .map(item => item.loja)
+        .filter(Boolean)
+    )
+  ].sort();
+
+  const departamentos = [
+    ...new Set(
+      D
+        .map(item => item.dep)
+        .filter(Boolean)
+    )
+  ].sort(
+    (a,b) =>
+      name(a).localeCompare(
+        name(b),
+        'pt-BR'
+      )
+  );
+
+  $('mes').innerHTML =
+    meses
+      .map(
+        mes =>
+          `<option>${mes}</option>`
+      )
+      .join('');
+
+  $('mes').value =
+    meses.at(-1);
+
+  $('loja').innerHTML =
+    '<option value="">Todas</option>' +
+    lojas
+      .map(
+        loja =>
+          `<option value="${loja}">
+            ${name(loja)}
+          </option>`
+      )
+      .join('');
+
+  $('dep').innerHTML =
+    '<option value="">Todos</option>' +
+    departamentos
+      .map(
+        departamento =>
+          `<option value="${departamento}">
+            ${name(departamento)}
+          </option>`
+      )
+      .join('');
+
+  ['mes','loja','dep'].forEach(
+    id => {
+      $(id).onchange = render;
+    }
+  );
+
+  $('limpar').onclick = () => {
+
+    $('loja').value = '';
+    $('dep').value = '';
+
+    render();
+  };
+
+  $('load').classList.add('hide');
+  $('dash').classList.remove('hide');
+
+  buildForm();
+  render();
+}
+
+function rows(){
+
+  return D.filter(item =>
+
+    item.c === $('mes').value &&
+
+    (
+      !$('loja').value ||
+      item.loja === $('loja').value
+    ) &&
+
+    (
+      !$('dep').value ||
+      item.dep === $('dep').value
+    )
+
+  );
+}
+
+function agg(linhas){
+
+  const contratos = new Set(
+
+    linhas
+      .filter(
+        item =>
+          rub(
+            item,
+            'Total dos Vencimentos'
+          ) &&
+          item.v > 0
+      )
+      .map(
+        item => item.ct
+      )
+
+  );
+
+  const gross =
+    linhas
+      .filter(
+        item =>
+          rub(
+            item,
+            'Total dos Vencimentos'
+          )
+      )
+      .reduce(
+        (soma,item) =>
+          soma + item.v,
+        0
+      );
+
+  const net =
+    linhas
+      .filter(
+        item =>
+          rub(
+            item,
+            'Líquido da Folha'
+          )
+      )
+      .reduce(
+        (soma,item) =>
+          soma + item.v,
+        0
+      );
+
+  const salary =
+    linhas
+      .filter(
+        item =>
+          /^Salário Mês/i.test(
+            item.rub
+          )
+      )
+      .reduce(
+        (soma,item) =>
+          soma + item.v,
+        0
+      );
+
+  let fgts =
+    linhas
+      .filter(
+        item =>
+          /^FGTS sobre/i.test(
+            item.rub
+          ) &&
+          !/^Base/i.test(
+            item.rub
+          )
+      )
+      .reduce(
+        (soma,item) =>
+          soma + item.v,
+        0
+      );
+
+  let baseInss =
+    linhas
+      .filter(
+        item =>
+          /^Base INSS Patronal/i.test(
+            item.rub
+          ) &&
+          /parte empresa/i.test(
+            item.rub
+          )
+      )
+      .reduce(
+        (soma,item) =>
+          soma + item.v,
+        0
+      );
+
+  let baseRat =
+    linhas
+      .filter(
+        item =>
+          /^Base INSS RAT x FAP/i.test(
+            item.rub
+          ) &&
+          /parte empresa/i.test(
+            item.rub
+          )
+      )
+      .reduce(
+        (soma,item) =>
+          soma + item.v,
+        0
+      );
+
+  let baseTerceiros =
+    linhas
+      .filter(
+        item =>
+          /^Base INSS Terceiros/i.test(
+            item.rub
+          ) &&
+          /parte empresa/i.test(
+            item.rub
+          )
+      )
+      .reduce(
+        (soma,item) =>
+          soma + item.v,
+        0
+      );
+
+  if(!fgts){
+    fgts =
+      gross *
+      P.fgts /
+      100;
+  }
+
+  if(!baseInss){
+    baseInss = gross;
+  }
+
+  if(!baseRat){
+    baseRat = gross;
+  }
+
+  if(!baseTerceiros){
+    baseTerceiros = gross;
+  }
+
+  const encargos =
+    baseInss *
+    P.inss /
+    100 +
+
+    baseRat *
+    P.rat *
+    P.fap /
+    100 +
+
+    baseTerceiros *
+    P.terceiros /
+    100;
+
+  const provisoes =
+    salary *
+    (
+      P.p13 +
+      P.pferias +
+      P.pterco
+    ) /
+    100;
+
+  const encargosProvisoes =
+    provisoes *
+    (
+      P.fgts +
+      P.inss +
+      P.rat * P.fap +
+      P.terceiros
+    ) /
+    100;
+
+  const cost =
+    gross +
+    fgts +
+    encargos +
+    provisoes +
+    encargosProvisoes;
+
+  return {
+    hc:contratos.size,
+    gross,
+    net,
+    salary,
+
+    avg:
+      contratos.size
+        ? salary / contratos.size
+        : 0,
+
+    cost,
+
+    cpf:
+      contratos.size
+        ? cost / contratos.size
+        : 0
+  };
+}
+
+function group(linhas,campo){
+
+  const grupos = {};
+
+  linhas.forEach(item => {
+
+    if(!grupos[item[campo]]){
+      grupos[item[campo]] = [];
+    }
+
+    grupos[item[campo]].push(item);
+
+  });
+
+  return Object
+    .entries(grupos)
+    .map(
+      ([chave,registros]) => ({
+        key:chave,
+        ...agg(registros)
+      })
+    )
+    .sort(
+      (a,b) =>
+        b.cost - a.cost
+    );
+}
+
+function render(){
+
+  const linhas =
+    rows();
+
+  const atual =
+    agg(linhas);
+
+  const anterior =
+    D.filter(item =>
+
+      item.c ===
+      prevMes(
+        $('mes').value
+      ) &&
+
+      (
+        !$('loja').value ||
+        item.loja ===
+        $('loja').value
+      ) &&
+
+      (
+        !$('dep').value ||
+        item.dep ===
+        $('dep').value
+      )
+
+    );
+
+  const resumoAnterior =
+    agg(anterior);
+
+  const variacao =
+    resumoAnterior.cost
+      ? (
+          atual.cost /
+          resumoAnterior.cost -
+          1
+        ) * 100
+      : 0;
+
+  $('status').textContent =
+    `${num(linhas.length)} lançamentos`;
+
+  const cards = [
+    [
+      'Funcionários',
+      num(atual.hc),
+      'Contratos com vencimentos'
+    ],
+    [
+      'Salário-base médio',
+      brl(atual.avg),
+      'Salário Mês ÷ funcionários'
+    ],
+    [
+      'Vencimentos',
+      brl(atual.gross),
+      'Total de proventos'
+    ],
+    [
+      'Custo econômico',
+      brl(atual.cost),
+
+      resumoAnterior.cost
+        ? (
+            variacao >= 0
+              ? '+'
+              : ''
+          ) +
+          variacao
+            .toFixed(1)
+            .replace('.',',') +
+          '% vs mês anterior'
+        : 'Sem comparação'
+    ]
+  ];
+
+  $('cards').innerHTML =
+    cards
+      .map(
+        card => `
+          <div class="card">
+            <b>${card[0]}</b>
+            <div class="v">
+              ${card[1]}
+            </div>
+            <div class="sub">
+              ${card[2]}
+            </div>
+          </div>
+        `
+      )
+      .join('');
+
+  table(
+    'tloja',
+    group(
+      linhas,
+      'loja'
+    )
+  );
+
+  table(
+    'tdep',
+    group(
+      linhas,
+      'dep'
+    )
+  );
+}
+
+function table(id,dados){
+
+  const linhas =
+    dados
+      .map(
+        item => `
+          <tr>
+            <td>
+              ${name(item.key) || 'Não informado'}
+            </td>
+            <td>${num(item.hc)}</td>
+            <td>${brl(item.avg)}</td>
+            <td>${brl(item.gross)}</td>
+            <td>${brl(item.cost)}</td>
+            <td>${brl(item.cpf)}</td>
+          </tr>
+        `
+      )
+      .join('');
+
+  const total =
+    agg(rows());
+
+  $(id).innerHTML =
+    linhas +
+    `
+      <tr class="total">
+        <td>Total filtrado</td>
+        <td>${num(total.hc)}</td>
+        <td>${brl(total.avg)}</td>
+        <td>${brl(total.gross)}</td>
+        <td>${brl(total.cost)}</td>
+        <td>${brl(total.cpf)}</td>
+      </tr>
+    `;
+}
+
+function prevMes(competencia){
+
+  let [ano,mes] =
+    competencia
+      .split('-')
+      .map(Number);
+
+  mes--;
+
+  if(!mes){
+    mes = 12;
+    ano--;
+  }
+
+  return (
+    `${ano}-` +
+    String(mes).padStart(2,'0')
+  );
+}
+
+function buildForm(){
+
+  const labels = {
+    inss:'INSS patronal %',
+    rat:'RAT %',
+    fap:'FAP',
+    terceiros:'Terceiros %',
+    fgts:'FGTS %',
+    p13:'Provisão 13º %',
+    pferias:'Provisão férias %',
+    pterco:'Terço de férias %'
+  };
+
+  $('form').innerHTML =
+    Object
+      .entries(labels)
+      .map(
+        ([campo,label]) => `
+          <div class="f">
+            <label>${label}</label>
+            <input
+              id="p_${campo}"
+              type="number"
+              step="0.0001"
+              value="${P[campo]}"
+            >
+          </div>
+        `
+      )
+      .join('');
+
+  $('salvar').onclick = () => {
+
+    Object
+      .keys(labels)
+      .forEach(
+        campo => {
+          P[campo] =
+            n(
+              $(
+                'p_' + campo
+              ).value
+            );
+        }
+      );
+
+    localStorage.setItem(
+      'folhaParam',
+      JSON.stringify(P)
+    );
+
+    alert(
+      'Parâmetros salvos neste navegador.'
+    );
+
+    render();
+  };
+}
+
+$('bd').onclick = () => {
+
+  $('bd').className = 'on';
+  $('bp').className = '';
+
+  $('dash').classList.remove('hide');
+  $('param').classList.add('hide');
+};
+
+$('bp').onclick = () => {
+
+  $('bp').className = 'on';
+  $('bd').className = '';
+
+  $('param').classList.remove('hide');
+  $('dash').classList.add('hide');
+};
+
+load();
+</script>
+
+</body>
+</html>
