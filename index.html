@@ -1,1143 +1,260 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DNA da Folha</title>
-
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>DNA da Folha — Pessoas, Custo e Eficiência</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-
 <style>
 :root{
-  --b:#f4f6fa;
-  --c:#fff;
-  --i:#172033;
-  --m:#6b7280;
-  --l:#e5e7eb;
-  --a:#1d4ed8;
-  --s:#eef2ff;
-  --g:#15803d;
-  --r:#b91c1c
+  --bg:#f5f7fb;--card:#fff;--ink:#1f2937;--muted:#6b7280;--line:#e5e7eb;
+  --accent:#1d4ed8;--soft:#eef2ff;--good:#15803d;--bad:#b91c1c;--warn:#b45309;
+  --teal:#0f766e;--purple:#6d28d9;--orange:#c2410c
 }
-
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  font:13px Arial;
-  background:var(--b);
-  color:var(--i)
-}
-
-header{
-  background:var(--c);
-  border-bottom:1px solid var(--l);
-  padding:14px 22px;
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  align-items:center
-}
-
-h1{
-  font-size:20px;
-  margin:0;
-  color:var(--a)
-}
-
-small{color:var(--m)}
-
-nav{
-  display:flex;
-  gap:6px
-}
-
-button,select,input{font:inherit}
-
-button{
-  border:1px solid var(--l);
-  background:#fff;
-  border-radius:9px;
-  padding:7px 11px;
-  cursor:pointer;
-  font-weight:700
-}
-
-button.on,.primary{
-  background:var(--a);
-  color:white;
-  border-color:var(--a)
-}
-
-main{
-  padding:14px 22px;
-  max-width:1700px;
-  margin:auto
-}
-
-.bar,.box{
-  background:var(--c);
-  border:1px solid var(--l);
-  border-radius:13px;
-  padding:12px;
-  margin-bottom:11px
-}
-
-.bar{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:end
-}
-
-.f{
-  display:flex;
-  flex-direction:column;
-  gap:4px
-}
-
-.f label{
-  font-size:10px;
-  text-transform:uppercase;
-  color:var(--m);
-  font-weight:700
-}
-
-.f select,.f input{
-  padding:7px 9px;
-  border:1px solid var(--l);
-  border-radius:8px;
-  min-width:180px
-}
-
-.cards{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px;
-  margin-bottom:11px
-}
-
-.card{
-  background:var(--c);
-  border:1px solid var(--l);
-  border-radius:13px;
-  padding:13px
-}
-
-.card b{
-  display:block;
-  font-size:10px;
-  text-transform:uppercase;
-  color:var(--m);
-  margin-bottom:6px
-}
-
-.v{
-  font-size:21px;
-  font-weight:800
-}
-
-.sub{
-  font-size:11px;
-  color:var(--m);
-  margin-top:5px
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:11px
-}
-
-h2{
-  font-size:15px;
-  margin:0 0 10px
-}
-
-.scroll{
-  overflow:auto;
-  max-height:520px;
-  border:1px solid var(--l);
-  border-radius:9px
-}
-
-table{
-  border-collapse:collapse;
-  width:100%;
-  min-width:760px
-}
-
-th,td{
-  padding:8px 9px;
-  border-bottom:1px solid #eef1f5;
-  text-align:right;
-  white-space:nowrap
-}
-
-th{
-  background:#f8fafc;
-  position:sticky;
-  top:0;
-  font-size:10px;
-  text-transform:uppercase;
-  color:#475569
-}
-
-th:first-child,td:first-child{
-  text-align:left
-}
-
-.total{
-  font-weight:800;
-  background:var(--s)
-}
-
-.good{color:var(--g)}
-.bad{color:var(--r)}
-
-.msg{
-  text-align:center;
-  padding:35px;
-  color:var(--m)
-}
-
-.prog{
-  height:9px;
-  background:#e5e7eb;
-  border-radius:99px;
-  overflow:hidden;
-  margin:12px auto;
-  max-width:520px
-}
-
-.prog i{
-  display:block;
-  height:100%;
-  width:0;
-  background:var(--a)
-}
-
-.form{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px
-}
-
-.note{
-  padding:10px;
-  background:var(--s);
-  border-radius:9px;
-  line-height:1.5;
-  margin-bottom:10px
-}
-
-.hide{display:none}
-
-@media(max-width:1000px){
-  .cards{grid-template-columns:repeat(2,1fr)}
-  .grid{grid-template-columns:1fr}
-  .form{grid-template-columns:repeat(2,1fr)}
-}
-
-@media(max-width:600px){
-  main,header{
-    padding-left:10px;
-    padding-right:10px
-  }
-
-  .cards,.form{
-    grid-template-columns:1fr
-  }
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);font-size:13px}
+button,input,select{font:inherit}
+.wrap{max-width:1800px;margin:0 auto}
+.header{background:var(--card);border-bottom:1px solid var(--line);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header-title{font-size:18px;font-weight:800;color:var(--accent)}
+.header-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.controls{background:var(--card);border-bottom:1px solid var(--line);padding:8px 20px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.cg{display:flex;flex-direction:column;gap:3px}.cg label,.tg label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.btngrp{display:flex;gap:5px;flex-wrap:wrap}.btn{padding:6px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn:hover{background:var(--soft);border-color:#c7d2fe}.btn.active{background:var(--soft);border-color:#c7d2fe;color:#1e3a8a}.btn:disabled{opacity:.45;cursor:not-allowed}
+.main{padding:12px 20px}.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--card);padding:10px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+.tg{display:flex;flex-direction:column;gap:3px}.tg select,.tg input{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12px;min-width:150px}
+.qbtns{display:flex;gap:5px;flex-wrap:wrap}.qbtn{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:11px;font-weight:700;cursor:pointer}.qbtn:hover{background:var(--soft)}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}.kcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;min-height:155px;display:flex;flex-direction:column}
+.kcard h3{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}.kval{font-size:20px;font-weight:800;margin-bottom:3px}.kmeta{font-size:11px;line-height:1.45;color:var(--muted);flex:1}.kchartbox{margin-top:6px;height:42px;border-top:1px dashed var(--line);padding-top:5px}
+.good{color:var(--good);font-weight:700}.bad{color:var(--bad);font-weight:700}.warn{color:var(--warn);font-weight:700}.neutral{color:#374151;font-weight:700}
+.analysis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.aitem{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}.aitem .ak{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}.aitem .av{font-size:16px;font-weight:800;margin:3px 0}.aitem .as{font-size:11px;line-height:1.4;color:var(--muted)}
+.section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}.shead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}.shead h2{font-size:15px}.legend{font-size:11px;color:var(--muted)}
+.twrap{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:610px}table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;background:#fff}thead th{position:sticky;top:0;z-index:3;background:#f8fafc;border-bottom:1px solid var(--line);padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#475569;white-space:nowrap;text-align:center}tbody td,tbody th{border-bottom:1px solid #f1f5f9;padding:7px 10px;vertical-align:middle}tbody th{position:sticky;left:0;z-index:2;background:#fff;min-width:190px;max-width:260px;font-size:12px;text-align:left}tbody td{text-align:right;white-space:nowrap}.left{text-align:left!important}.center{text-align:center!important}.cv{font-weight:700;white-space:nowrap;font-size:12px}.cp{font-size:10px;color:var(--muted)}
+tr.total th,tr.total td{background:#f0f5ff;font-weight:800}.rank{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--soft);color:#1e3a8a;font-weight:800;margin-right:6px}.badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:var(--soft);color:#1e3a8a;font-size:10px;font-weight:700}.badge.warn{background:#fff7ed;color:#9a3412}.badge.good{background:#ecfdf5;color:#166534}.badge.bad{background:#fef2f2;color:#991b1b}
+.p2grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.ccard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}.ccard h3{font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}.bar-row{display:grid;grid-template-columns:minmax(150px,240px) 1fr 110px;align-items:center;gap:8px;margin-bottom:8px}.bar-row>div:first-child{font-size:12px}.bar-track{height:10px;background:#eef2f7;border-radius:999px;overflow:hidden}.bar-fill{height:100%;background:var(--accent);border-radius:999px}.bar-value{text-align:right;font-weight:700}.chart{width:100%;height:260px;display:block}.chart text{font-family:Arial,Helvetica,sans-serif;fill:#64748b;font-size:10px}.chart .grid{stroke:#e5e7eb;stroke-width:1}.chart .axis{stroke:#94a3b8;stroke-width:1}.chart .line-main{fill:none;stroke:var(--accent);stroke-width:2.5}.chart .line-alt{fill:none;stroke:var(--teal);stroke-width:2;stroke-dasharray:5 4}.chart .dot{fill:#fff;stroke:var(--accent);stroke-width:2}.chart .dot-alt{fill:#fff;stroke:var(--teal);stroke-width:2}
+.form-grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:4px}.field label{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}.field input,.field select{padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.danger{color:var(--bad)}
+.callout{background:var(--soft);border:1px solid #c7d2fe;border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.55;margin-bottom:10px}.loading{text-align:center;padding:36px;color:var(--muted);font-size:13px}.progress{max-width:560px;height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin:12px auto}.progress>div{height:100%;background:var(--accent);width:0;transition:width .2s}.errmsg{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;color:#b91c1c;font-size:12px;margin:10px 0}.empty{text-align:center;padding:30px;color:var(--muted)}
+.small{font-size:11px;color:var(--muted)}.msep{width:1px;height:18px;background:var(--line);margin:0 5px;display:inline-block;vertical-align:middle}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}.status-ok{background:#16a34a}.status-warn{background:#f59e0b}.status-err{background:#dc2626}
+@media(max-width:1100px){.cards,.analysis{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.p2grid{grid-template-columns:1fr}.bar-row{grid-template-columns:1fr}.bar-value{text-align:left}.header,.controls,.main{padding-left:10px;padding-right:10px}}
+@media(max-width:520px){.cards,.analysis,.form-grid{grid-template-columns:1fr}.tg select,.tg input{min-width:130px}.kval{font-size:18px}}
 </style>
 </head>
-
 <body>
-
-<header>
-  <div>
-    <h1>DNA da Folha</h1>
-    <small>Pessoas, custo e eficiência por loja e departamento</small>
+<div class="wrap"><div class="header">
+  <div style="display:flex;align-items:center;gap:14px">
+    <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" aria-label="DNA da Folha">
+      <path d="M8,4 C8,4 18,10 18,19 C18,28 8,34 8,34" fill="none" stroke="#1d4ed8" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M30,4 C30,4 20,10 20,19 C20,28 30,34 30,34" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="10" y1="9" x2="28" y2="9" stroke="#1d4ed8" stroke-width="1.5" opacity=".6"/>
+      <line x1="13" y1="14" x2="25" y2="14" stroke="#1d4ed8" stroke-width="1.5" opacity=".6"/>
+      <line x1="11" y1="19" x2="27" y2="19" stroke="#1d4ed8" stroke-width="1.5" opacity=".6"/>
+      <line x1="13" y1="24" x2="25" y2="24" stroke="#1d4ed8" stroke-width="1.5" opacity=".6"/>
+      <line x1="10" y1="29" x2="28" y2="29" stroke="#1d4ed8" stroke-width="1.5" opacity=".6"/>
+    </svg>
+    <div><div class="header-title">DNA da Folha</div><div class="header-sub">Pessoas, custo e eficiência · Controladoria de Pessoal</div></div>
   </div>
-
-  <nav>
-    <button id="bd" class="on">Dashboard</button>
-    <button id="bp">Parametrização</button>
-  </nav>
-</header>
-
-<main>
-
-<section id="load" class="box">
-  <div class="msg">
-    Lendo as folhas mensais…
-
-    <div class="prog">
-      <i id="pg"></i>
-    </div>
-
-    <span id="pt"></span>
-  </div>
-</section>
-
-<section id="dash" class="hide">
-
-  <div class="bar">
-
-    <div class="f">
-      <label>Competência</label>
-      <select id="mes"></select>
-    </div>
-
-    <div class="f">
-      <label>Loja</label>
-      <select id="loja"></select>
-    </div>
-
-    <div class="f">
-      <label>Departamento</label>
-      <select id="dep"></select>
-    </div>
-
-    <button id="limpar">Limpar filtros</button>
-
-    <small id="status"></small>
-
-  </div>
-
-  <div class="cards" id="cards"></div>
-
-  <div class="grid">
-
-    <div class="box">
-
-      <h2>Resumo por loja</h2>
-
-      <div class="scroll">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>Loja</th>
-              <th>Funcionários</th>
-              <th>Salário médio</th>
-              <th>Vencimentos</th>
-              <th>Custo econômico</th>
-              <th>Custo/func.</th>
-            </tr>
-          </thead>
-
-          <tbody id="tloja"></tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-
-    <div class="box">
-
-      <h2>Resumo por departamento</h2>
-
-      <div class="scroll">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>Departamento</th>
-              <th>Funcionários</th>
-              <th>Salário médio</th>
-              <th>Vencimentos</th>
-              <th>Custo econômico</th>
-              <th>Custo/func.</th>
-            </tr>
-          </thead>
-
-          <tbody id="tdep"></tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
-
-<section id="param" class="hide">
-
-  <div class="box">
-
-    <h2>Parâmetros de custo</h2>
-
-    <div class="note">
-      Percentuais usados para estimar encargos e provisões.
-      Nesta primeira versão são globais. Depois cadastraremos
-      vigência e regras específicas por CNPJ e loja.
-    </div>
-
-    <div class="form" id="form"></div>
-
-    <button id="salvar" class="primary">
-      Salvar parâmetros
-    </button>
-
-  </div>
-
-</section>
-
-</main>
-
+  <div style="font-size:11px;color:var(--muted)" id="hinfo">Aguardando dados</div>
+</div></div>
+<div class="wrap"><div class="controls">
+  <div class="cg"><label>Módulo</label><div class="btngrp" id="moduleButtons">
+    <button class="btn active" data-module="home">Visão Executiva</button>
+    <button class="btn" data-module="stores">Lojas</button>
+    <button class="btn" data-module="departments">Departamentos</button>
+    <button class="btn" data-module="evolution">Evolução</button>
+    <span class="msep"></span>
+    <button class="btn" data-module="audit">Auditoria</button>
+    <button class="btn" data-module="settings">Parametrização</button>
+  </div></div>
+</div></div>
+<div class="wrap"><div class="main" id="main">
+  <div class="loading"><strong>Carregando folhas mensais do GitHub…</strong><div class="progress"><div id="progressBar"></div></div><div id="progressText">Preparando leitura dos arquivos XLSX</div></div>
+</div></div>
 <script>
-const BASE =
-  'https://raw.githubusercontent.com/elder901/Folha/main/';
-
-const F = [
-  ['2025-06','BI Por departamento/2025/06 2025.xlsx'],
-  ['2025-07','BI Por departamento/2025/07 2025.xlsx'],
-  ['2025-08','BI Por departamento/2025/08 2025.xlsx'],
-  ['2025-09','BI Por departamento/2025/09 2025.xlsx'],
-  ['2025-10','BI Por departamento/2025/10 2025.xlsx'],
-  ['2025-11','BI Por departamento/2025/11 2025.xlsx'],
-  ['2025-12','BI Por departamento/2025/12 2025.xlsx'],
-  ['2026-01','BI Por departamento/2026/01 2026.xlsx'],
-  ['2026-02','BI Por departamento/2026/02 2026.xlsx'],
-  ['2026-03','BI Por departamento/2026/03 2026.xlsx'],
-  ['2026-04','BI Por departamento/2026/04 2026.xlsx'],
-  ['2026-05','BI Por departamento/2026/05 2026.xlsx'],
-  ['2026-06','BI Por departamento/2026/06 2026.xlsx']
+'use strict';
+const BASE='https://raw.githubusercontent.com/elder901/Folha/main';
+const FILES=[
+  {competencia:'2025-06',path:'BI Por departamento/2025/06 2025.xlsx'},
+  {competencia:'2025-07',path:'BI Por departamento/2025/07 2025.xlsx'},
+  {competencia:'2025-08',path:'BI Por departamento/2025/08 2025.xlsx'},
+  {competencia:'2025-09',path:'BI Por departamento/2025/09 2025.xlsx'},
+  {competencia:'2025-10',path:'BI Por departamento/2025/10 2025.xlsx'},
+  {competencia:'2025-11',path:'BI Por departamento/2025/11 2025.xlsx'},
+  {competencia:'2025-12',path:'BI Por departamento/2025/12 2025.xlsx'},
+  {competencia:'2026-01',path:'BI Por departamento/2026/01 2026.xlsx'},
+  {competencia:'2026-02',path:'BI Por departamento/2026/02 2026.xlsx'},
+  {competencia:'2026-03',path:'BI Por departamento/2026/03 2026.xlsx'},
+  {competencia:'2026-04',path:'BI Por departamento/2026/04 2026.xlsx'},
+  {competencia:'2026-05',path:'BI Por departamento/2026/05 2026.xlsx'},
+  {competencia:'2026-06',path:'BI Por departamento/2026/06 2026.xlsx'}
 ];
-
-let D = [];
-
-let P = Object.assign(
-  {
-    inss:20,
-    rat:2,
-    fap:1,
-    terceiros:5.8,
-    fgts:8,
-    p13:8.3333,
-    pferias:8.3333,
-    pterco:2.7778
-  },
-  JSON.parse(localStorage.getItem('folhaParam') || '{}')
-);
-
-const $ = id => document.getElementById(id);
-
-const n = valor => {
-  if(typeof valor === 'number'){
-    return valor;
-  }
-
-  let texto = String(valor || '')
-    .trim()
-    .replace(/\s/g,'');
-
-  if(texto.includes(',') && texto.includes('.')){
-    texto = texto
-      .replace(/\./g,'')
-      .replace(',','.');
-  }else{
-    texto = texto.replace(',','.');
-  }
-
-  return Number(texto) || 0;
+const DEFAULT_PARAM={inss:20,rat:2,fap:1,terceiros:5.8,fgts:8,prov13:8.3333,provFerias:8.3333,provTerco:2.7778};
+const S={module:'home',rows:[],loaded:[],errors:[],cache:{},competencias:[],stores:[],departments:[],ini:null,fim:null,store:'all',department:'all',params:{},leaders:{},globalParam:{...DEFAULT_PARAM}};
+const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const RUB={
+  gross:'Total dos Vencimentos',discounts:'Total dos Descontos',net:'Líquido da Folha',salary:'Salário Mês (SMES)',
+  basePatFolha:'Base INSS Patronal sobre a Folha (parte empresa)',baseRatFolha:'Base INSS RAT x FAP sobre a Folha (parte empresa)',
+  baseTerFolha:'Base INSS Terceiros sobre a Folha (parte empresa)'
 };
-
-const txt = valor =>
-  String(valor || '').trim();
-
-const brl = valor =>
-  valor.toLocaleString(
-    'pt-BR',
-    {
-      style:'currency',
-      currency:'BRL'
-    }
-  );
-
-const num = valor =>
-  valor.toLocaleString('pt-BR');
-
-const url = caminho =>
-  BASE +
-  caminho
-    .split('/')
-    .map(encodeURIComponent)
-    .join('/');
-
-const name = texto =>
-  txt(texto).replace(/^[^ ]+\s*-\s*/,'');
-
-const rub = (registro,nomeRubrica) =>
-  registro.rub === nomeRubrica;
-
-async function load(){
-
-  for(let i = 0; i < F.length; i++){
-
-    const [competencia,caminho] = F[i];
-
-    $('pt').textContent =
-      `${i + 1}/${F.length} · ${competencia}`;
-
-    try{
-
-      const resposta = await fetch(url(caminho));
-
-      if(!resposta.ok){
-        throw new Error(
-          `Erro HTTP ${resposta.status}`
-        );
-      }
-
-      const arquivo =
-        await resposta.arrayBuffer();
-
-      const workbook =
-        XLSX.read(arquivo);
-
-      const planilha =
-        workbook.Sheets[
-          workbook.SheetNames[0]
-        ];
-
-      const linhas =
-        XLSX.utils.sheet_to_json(
-          planilha,
-          {
-            defval:'',
-            raw:false
-          }
-        );
-
-      linhas.forEach(linha => {
-
-        D.push({
-          c:competencia,
-          emp:txt(linha.Empresa),
-          loja:txt(linha.Estabelecimento),
-          ct:txt(linha.Contrato),
-          dep:txt(linha.Setor),
-          tipo:txt(linha['Tipo de Folha']),
-          q:n(linha['Horas/Quantidade ou Valor']),
-          v:n(linha.Valor),
-          rub:txt(linha.Rubrica)
-        });
-
-      });
-
-    }catch(erro){
-
-      console.error(
-        caminho,
-        erro
-      );
-
-    }
-
-    $('pg').style.width =
-      ((i + 1) / F.length * 100) + '%';
-  }
-
-  init();
+function urlFor(path){return BASE+'/'+path.split('/').map(encodeURIComponent).join('/');}
+function num(v){if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return isFinite(v)?v:0;let s=String(v).trim().replace(/\s/g,'');if(!s)return 0;if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');const n=Number(s);return isFinite(n)?n:0;}
+function text(v){return v===null||v===undefined?'':String(v).trim();}
+function codeOf(v){const m=text(v).match(/^([^\s]+)\s*-\s*/);return m?m[1]:text(v);}
+function nameOf(v){return text(v).replace(/^([^\s]+)\s*-\s*/,'').trim()||text(v);}
+function fM(v){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2}).format(v||0);}
+function fN(v,c=0){return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c}).format(v||0);}
+function fP(v,c=1,signal=true){if(!isFinite(v))return '—';return (signal&&v>0?'+':'')+v.toFixed(c).replace('.',',')+'%';}
+function pct(a,b){return b?((a/b)-1)*100:0;}
+function cls(v,reverse=false){if(Math.abs(v)<0.0001)return 'neutral';const good=reverse?v<0:v>0;return good?'good':'bad';}
+function compLabel(c){const [y,m]=c.split('-');return MONTHS[+m-1]+'/'+y.slice(2);}
+function prevComp(c){const i=S.competencias.indexOf(c);return i>0?S.competencias[i-1]:null;}
+function esc(s){return text(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function loadLocal(){try{S.params=JSON.parse(localStorage.getItem('folha.params')||'{}');S.leaders=JSON.parse(localStorage.getItem('folha.leaders')||'{}');S.globalParam={...DEFAULT_PARAM,...JSON.parse(localStorage.getItem('folha.globalParam')||'{}')};}catch(e){S.params={};S.leaders={};}}
+function saveLocal(){localStorage.setItem('folha.params',JSON.stringify(S.params));localStorage.setItem('folha.leaders',JSON.stringify(S.leaders));localStorage.setItem('folha.globalParam',JSON.stringify(S.globalParam));}
+function paramFor(est){const c=codeOf(est);return {...S.globalParam,...(S.params[c]||{})};}
+function normalizeHeader(o){const get=(...ks)=>{for(const k of ks){if(Object.prototype.hasOwnProperty.call(o,k))return o[k];}return '';};return {
+  empresa:text(get('Empresa')),estabelecimento:text(get('Estabelecimento')),contrato:text(get('Contrato')),setor:text(get('Setor')),
+  tipoFolha:text(get('Tipo de Folha')),dataFolha:text(get('Data da Folha')),dataPagamento:text(get('Data do Pagamento')),
+  quantidade:num(get('Horas/Quantidade ou Valor')),valor:num(get('Valor')),rubrica:text(get('Rubrica'))
+};}
+async function loadFile(file,index){
+  const r=await fetch(urlFor(file.path),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
+  const buf=await r.arrayBuffer();const wb=XLSX.read(buf,{type:'array',cellDates:false});const ws=wb.Sheets[wb.SheetNames[0]];
+  const raw=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});const rows=raw.map(normalizeHeader).filter(x=>x.rubrica||x.contrato);
+  rows.forEach(x=>{x.competencia=file.competencia;x.arquivo=file.path;});
+  return rows;
 }
-
-function init(){
-
-  const meses = [
-    ...new Set(
-      D.map(item => item.c)
-    )
-  ].sort();
-
-  const lojas = [
-    ...new Set(
-      D
-        .map(item => item.loja)
-        .filter(Boolean)
-    )
-  ].sort();
-
-  const departamentos = [
-    ...new Set(
-      D
-        .map(item => item.dep)
-        .filter(Boolean)
-    )
-  ].sort(
-    (a,b) =>
-      name(a).localeCompare(
-        name(b),
-        'pt-BR'
-      )
-  );
-
-  $('mes').innerHTML =
-    meses
-      .map(
-        mes =>
-          `<option>${mes}</option>`
-      )
-      .join('');
-
-  $('mes').value =
-    meses.at(-1);
-
-  $('loja').innerHTML =
-    '<option value="">Todas</option>' +
-    lojas
-      .map(
-        loja =>
-          `<option value="${loja}">
-            ${name(loja)}
-          </option>`
-      )
-      .join('');
-
-  $('dep').innerHTML =
-    '<option value="">Todos</option>' +
-    departamentos
-      .map(
-        departamento =>
-          `<option value="${departamento}">
-            ${name(departamento)}
-          </option>`
-      )
-      .join('');
-
-  ['mes','loja','dep'].forEach(
-    id => {
-      $(id).onchange = render;
-    }
-  );
-
-  $('limpar').onclick = () => {
-
-    $('loja').value = '';
-    $('dep').value = '';
-
-    render();
-  };
-
-  $('load').classList.add('hide');
-  $('dash').classList.remove('hide');
-
-  buildForm();
+async function loadAll(){
+  loadLocal();const progress=document.getElementById('progressBar'),label=document.getElementById('progressText');
+  for(let i=0;i<FILES.length;i++){
+    const f=FILES[i];label.textContent=`Lendo ${compLabel(f.competencia)} · arquivo ${i+1} de ${FILES.length}`;
+    try{const rows=await loadFile(f,i);S.rows.push(...rows);S.loaded.push({...f,rows:rows.length});}
+    catch(e){S.errors.push({...f,error:e.message});}
+    progress.style.width=((i+1)/FILES.length*100).toFixed(1)+'%';
+  }
+  S.competencias=[...new Set(S.rows.map(r=>r.competencia))].sort();
+  S.stores=[...new Set(S.rows.map(r=>r.estabelecimento).filter(Boolean))].sort((a,b)=>codeOf(a).localeCompare(codeOf(b)));
+  S.departments=[...new Set(S.rows.map(r=>r.setor).filter(Boolean))].sort((a,b)=>nameOf(a).localeCompare(nameOf(b),'pt-BR'));
+  S.fim=S.competencias.at(-1)||null;S.ini=S.competencias[Math.max(0,S.competencias.length-12)]||S.competencias[0]||null;
+  document.getElementById('hinfo').innerHTML=`<span class="status-dot ${S.errors.length?'status-warn':'status-ok'}"></span>${S.loaded.length}/${FILES.length} arquivos · ${fN(S.rows.length)} lançamentos`;
   render();
 }
-
-function rows(){
-
-  return D.filter(item =>
-
-    item.c === $('mes').value &&
-
-    (
-      !$('loja').value ||
-      item.loja === $('loja').value
-    ) &&
-
-    (
-      !$('dep').value ||
-      item.dep === $('dep').value
-    )
-
-  );
+function selectedRows({singleMonth=false,ignoreDepartment=false,ignoreStore=false}={}){
+  const ini=singleMonth?S.fim:S.ini,fim=S.fim;
+  return S.rows.filter(r=>r.competencia>=ini&&r.competencia<=fim&&(ignoreStore||S.store==='all'||r.estabelecimento===S.store)&&(ignoreDepartment||S.department==='all'||r.setor===S.department));
 }
-
-function agg(linhas){
-
-  const contratos = new Set(
-
-    linhas
-      .filter(
-        item =>
-          rub(
-            item,
-            'Total dos Vencimentos'
-          ) &&
-          item.v > 0
-      )
-      .map(
-        item => item.ct
-      )
-
-  );
-
-  const gross =
-    linhas
-      .filter(
-        item =>
-          rub(
-            item,
-            'Total dos Vencimentos'
-          )
-      )
-      .reduce(
-        (soma,item) =>
-          soma + item.v,
-        0
-      );
-
-  const net =
-    linhas
-      .filter(
-        item =>
-          rub(
-            item,
-            'Líquido da Folha'
-          )
-      )
-      .reduce(
-        (soma,item) =>
-          soma + item.v,
-        0
-      );
-
-  const salary =
-    linhas
-      .filter(
-        item =>
-          /^Salário Mês/i.test(
-            item.rub
-          )
-      )
-      .reduce(
-        (soma,item) =>
-          soma + item.v,
-        0
-      );
-
-  let fgts =
-    linhas
-      .filter(
-        item =>
-          /^FGTS sobre/i.test(
-            item.rub
-          ) &&
-          !/^Base/i.test(
-            item.rub
-          )
-      )
-      .reduce(
-        (soma,item) =>
-          soma + item.v,
-        0
-      );
-
-  let baseInss =
-    linhas
-      .filter(
-        item =>
-          /^Base INSS Patronal/i.test(
-            item.rub
-          ) &&
-          /parte empresa/i.test(
-            item.rub
-          )
-      )
-      .reduce(
-        (soma,item) =>
-          soma + item.v,
-        0
-      );
-
-  let baseRat =
-    linhas
-      .filter(
-        item =>
-          /^Base INSS RAT x FAP/i.test(
-            item.rub
-          ) &&
-          /parte empresa/i.test(
-            item.rub
-          )
-      )
-      .reduce(
-        (soma,item) =>
-          soma + item.v,
-        0
-      );
-
-  let baseTerceiros =
-    linhas
-      .filter(
-        item =>
-          /^Base INSS Terceiros/i.test(
-            item.rub
-          ) &&
-          /parte empresa/i.test(
-            item.rub
-          )
-      )
-      .reduce(
-        (soma,item) =>
-          soma + item.v,
-        0
-      );
-
-  if(!fgts){
-    fgts =
-      gross *
-      P.fgts /
-      100;
+function isFgtsValue(r){return /^FGTS sobre /i.test(r.rubrica)&&!/^Base /i.test(r.rubrica);}
+function isBasePat(r){return /^Base INSS Patronal sobre/i.test(r.rubrica)&&/parte empresa/i.test(r.rubrica);}
+function isBaseRat(r){return /^Base INSS RAT x FAP sobre/i.test(r.rubrica)&&/parte empresa/i.test(r.rubrica);}
+function isBaseTer(r){return /^Base INSS Terceiros sobre/i.test(r.rubrica)&&/parte empresa/i.test(r.rubrica);}
+function isVacationTotal(r){return /^Total (Abono de )?Férias/i.test(r.rubrica);}
+function is13Base(r){return /^Base INSS Patronal sobre 13º/i.test(r.rubrica);}
+function isOvertime(r){const x=r.rubrica;return /(Horas Extras|DSR Horas Extras|Horas DSR\/Feriado)/i.test(x)&&!/(Base|Média|Provis|Diferença|Vlr Hora)/i.test(x);}
+function isManageable(r){return isOvertime(r)||/(Prêmio|Premio|Comissão|Comissao|Gratificação|Gratificacao)/i.test(r.rubrica)&&!/(Base|Média|Provis)/i.test(r.rubrica);}
+function metricSimple(rows){
+  const m={headcountSet:new Set(),salarySet:new Set(),gross:0,discounts:0,net:0,salary:0,fgts:0,basePat:0,baseRat:0,baseTer:0,basePatRegular:0,baseRatRegular:0,baseTerRegular:0,vacation:0,thirteenth:0,overtime:0,manageable:0,rows:rows.length};
+  for(const r of rows){
+    const rub=r.rubrica,v=r.valor;
+    if(rub===RUB.gross){m.gross+=v;m.headcountSet.add(r.contrato);}
+    else if(rub===RUB.discounts)m.discounts+=v;
+    else if(rub===RUB.net){m.net+=v;m.headcountSet.add(r.contrato);}
+    if(rub===RUB.salary){m.salary+=v;m.salarySet.add(r.contrato);}
+    if(isFgtsValue(r))m.fgts+=v;
+    if(isBasePat(r))m.basePat+=v;
+    if(isBaseRat(r))m.baseRat+=v;
+    if(isBaseTer(r))m.baseTer+=v;
+    if(rub===RUB.basePatFolha)m.basePatRegular+=v;
+    if(rub===RUB.baseRatFolha)m.baseRatRegular+=v;
+    if(rub===RUB.baseTerFolha)m.baseTerRegular+=v;
+    if(isVacationTotal(r))m.vacation+=v;
+    if(is13Base(r))m.thirteenth+=v;
+    if(isOvertime(r))m.overtime+=v;
+    if(isManageable(r))m.manageable+=v;
   }
-
-  if(!baseInss){
-    baseInss = gross;
+  m.headcount=m.headcountSet.size;m.salaryCount=m.salarySet.size;m.salaryAvg=m.salaryCount?m.salary/m.salaryCount:0;m.grossAvg=m.headcount?m.gross/m.headcount:0;
+  return m;
+}
+function metric(rows){
+  const byStore=new Map();for(const r of rows){const k=r.estabelecimento||'SEM ESTABELECIMENTO';if(!byStore.has(k))byStore.set(k,[]);byStore.get(k).push(r);}
+  const out={headcountSet:new Set(),salarySet:new Set(),gross:0,discounts:0,net:0,salary:0,fgts:0,inss:0,rat:0,thirds:0,charges:0,vacation:0,thirteenth:0,overtime:0,manageable:0,provisions:0,provisionCharges:0,cashCost:0,economicCost:0,regularRem:0};
+  for(const [est,rs] of byStore){const a=metricSimple(rs),p=paramFor(est);a.headcountSet.forEach(c=>out.headcountSet.add(est+'|'+c));a.salarySet.forEach(c=>out.salarySet.add(est+'|'+c));
+    const inss=a.basePat*p.inss/100,rat=a.baseRat*(p.rat/100)*p.fap,thirds=a.baseTer*p.terceiros/100;
+    const regularCharges=a.fgts*(a.basePat?Math.min(1,a.basePatRegular/a.basePat):1)+a.basePatRegular*p.inss/100+a.baseRatRegular*(p.rat/100)*p.fap+a.baseTerRegular*p.terceiros/100;
+    const provBase=a.basePatRegular*((p.prov13+p.provFerias+p.provTerco)/100);
+    const provChargeRate=(p.fgts+p.inss+(p.rat*p.fap)+p.terceiros)/100;
+    const provCharges=provBase*provChargeRate;
+    const regularRem=Math.max(0,a.gross-a.vacation-a.thirteenth);
+    Object.assign(out,{gross:out.gross+a.gross,discounts:out.discounts+a.discounts,net:out.net+a.net,salary:out.salary+a.salary,fgts:out.fgts+a.fgts,inss:out.inss+inss,rat:out.rat+rat,thirds:out.thirds+thirds,charges:out.charges+a.fgts+inss+rat+thirds,vacation:out.vacation+a.vacation,thirteenth:out.thirteenth+a.thirteenth,overtime:out.overtime+a.overtime,manageable:out.manageable+a.manageable,provisions:out.provisions+provBase,provisionCharges:out.provisionCharges+provCharges,cashCost:out.cashCost+a.gross+a.fgts+inss+rat+thirds,economicCost:out.economicCost+regularRem+regularCharges+provBase+provCharges,regularRem:out.regularRem+regularRem});
   }
-
-  if(!baseRat){
-    baseRat = gross;
-  }
-
-  if(!baseTerceiros){
-    baseTerceiros = gross;
-  }
-
-  const encargos =
-    baseInss *
-    P.inss /
-    100 +
-
-    baseRat *
-    P.rat *
-    P.fap /
-    100 +
-
-    baseTerceiros *
-    P.terceiros /
-    100;
-
-  const provisoes =
-    salary *
-    (
-      P.p13 +
-      P.pferias +
-      P.pterco
-    ) /
-    100;
-
-  const encargosProvisoes =
-    provisoes *
-    (
-      P.fgts +
-      P.inss +
-      P.rat * P.fap +
-      P.terceiros
-    ) /
-    100;
-
-  const cost =
-    gross +
-    fgts +
-    encargos +
-    provisoes +
-    encargosProvisoes;
-
-  return {
-    hc:contratos.size,
-    gross,
-    net,
-    salary,
-
-    avg:
-      contratos.size
-        ? salary / contratos.size
-        : 0,
-
-    cost,
-
-    cpf:
-      contratos.size
-        ? cost / contratos.size
-        : 0
-  };
+  out.headcount=out.headcountSet.size;out.salaryCount=out.salarySet.size;out.salaryAvg=out.salaryCount?out.salary/out.salaryCount:0;out.grossAvg=out.headcount?out.gross/out.headcount:0;out.costAvg=out.headcount?out.economicCost/out.headcount:0;return out;
 }
-
-function group(linhas,campo){
-
-  const grupos = {};
-
-  linhas.forEach(item => {
-
-    if(!grupos[item[campo]]){
-      grupos[item[campo]] = [];
-    }
-
-    grupos[item[campo]].push(item);
-
-  });
-
-  return Object
-    .entries(grupos)
-    .map(
-      ([chave,registros]) => ({
-        key:chave,
-        ...agg(registros)
-      })
-    )
-    .sort(
-      (a,b) =>
-        b.cost - a.cost
-    );
+function metricMonth(c,extra={}){let rs=S.rows.filter(r=>r.competencia===c);if(!extra.ignoreStore&&S.store!=='all')rs=rs.filter(r=>r.estabelecimento===S.store);if(!extra.ignoreDepartment&&S.department!=='all')rs=rs.filter(r=>r.setor===S.department);return metric(rs);}
+function series(field){return S.competencias.filter(c=>c>=S.ini&&c<=S.fim).map(c=>({label:compLabel(c),value:metricMonth(c)[field]||0,comp:c}));}
+function spark(vals,color='#1d4ed8'){if(!vals.length)return '';const w=250,h=34,p=3,min=Math.min(...vals),max=Math.max(...vals),range=max-min||1;const pts=vals.map((v,i)=>`${p+i*(w-2*p)/Math.max(1,vals.length-1)},${h-p-(v-min)*(h-2*p)/range}`).join(' ');return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="34" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>`;}
+function deltaMeta(cur,prev,field,{reverse=false,money=false}={}){const v=pct(cur[field]||0,prev[field]||0),d=(cur[field]||0)-(prev[field]||0);return `<span class="${cls(v,reverse)}">${fP(v)}</span> vs. mês anterior · ${money?fM(d):fN(d)}`;}
+function toolbar(){const opts=S.competencias.map(c=>`<option value="${c}">${compLabel(c)}</option>`).join('');const stores=`<option value="all">Todas as lojas</option>`+S.stores.map(x=>`<option value="${esc(x)}">${esc(codeOf(x)+' · '+nameOf(x))}</option>`).join('');const deps=`<option value="all">Todos os departamentos</option>`+S.departments.map(x=>`<option value="${esc(x)}">${esc(codeOf(x)+' · '+nameOf(x))}</option>`).join('');return `<div class="toolbar">
+  <div class="tg"><label>Início</label><select id="selIni">${opts}</select></div><div class="tg"><label>Fim / competência atual</label><select id="selFim">${opts}</select></div>
+  <div class="tg"><label>Loja</label><select id="selStore">${stores}</select></div><div class="tg"><label>Departamento</label><select id="selDepartment">${deps}</select></div>
+  <div class="qbtns"><button class="qbtn" id="last6">Últimos 6 meses</button><button class="qbtn" id="last12">Últimos 12 meses</button><button class="qbtn" id="allPeriod">Todo período</button></div>
+</div>`;}
+function bindToolbar(){const si=document.getElementById('selIni'),sf=document.getElementById('selFim'),ss=document.getElementById('selStore'),sd=document.getElementById('selDepartment');if(!si)return;si.value=S.ini;sf.value=S.fim;ss.value=S.store;sd.value=S.department;
+  si.addEventListener('change',()=>{S.ini=si.value;if(S.ini>S.fim){S.fim=S.ini;}render();});sf.addEventListener('change',()=>{S.fim=sf.value;if(S.fim<S.ini){S.ini=S.fim;}render();});ss.addEventListener('change',()=>{S.store=ss.value;render();});sd.addEventListener('change',()=>{S.department=sd.value;render();});
+  document.getElementById('last6').onclick=()=>{const i=Math.max(0,S.competencias.indexOf(S.fim)-5);S.ini=S.competencias[i];render();};document.getElementById('last12').onclick=()=>{const i=Math.max(0,S.competencias.indexOf(S.fim)-11);S.ini=S.competencias[i];render();};document.getElementById('allPeriod').onclick=()=>{S.ini=S.competencias[0];S.fim=S.competencias.at(-1);render();};
 }
-
-function render(){
-
-  const linhas =
-    rows();
-
-  const atual =
-    agg(linhas);
-
-  const anterior =
-    D.filter(item =>
-
-      item.c ===
-      prevMes(
-        $('mes').value
-      ) &&
-
-      (
-        !$('loja').value ||
-        item.loja ===
-        $('loja').value
-      ) &&
-
-      (
-        !$('dep').value ||
-        item.dep ===
-        $('dep').value
-      )
-
-    );
-
-  const resumoAnterior =
-    agg(anterior);
-
-  const variacao =
-    resumoAnterior.cost
-      ? (
-          atual.cost /
-          resumoAnterior.cost -
-          1
-        ) * 100
-      : 0;
-
-  $('status').textContent =
-    `${num(linhas.length)} lançamentos`;
-
-  const cards = [
-    [
-      'Funcionários',
-      num(atual.hc),
-      'Contratos com vencimentos'
-    ],
-    [
-      'Salário-base médio',
-      brl(atual.avg),
-      'Salário Mês ÷ funcionários'
-    ],
-    [
-      'Vencimentos',
-      brl(atual.gross),
-      'Total de proventos'
-    ],
-    [
-      'Custo econômico',
-      brl(atual.cost),
-
-      resumoAnterior.cost
-        ? (
-            variacao >= 0
-              ? '+'
-              : ''
-          ) +
-          variacao
-            .toFixed(1)
-            .replace('.',',') +
-          '% vs mês anterior'
-        : 'Sem comparação'
-    ]
-  ];
-
-  $('cards').innerHTML =
-    cards
-      .map(
-        card => `
-          <div class="card">
-            <b>${card[0]}</b>
-            <div class="v">
-              ${card[1]}
-            </div>
-            <div class="sub">
-              ${card[2]}
-            </div>
-          </div>
-        `
-      )
-      .join('');
-
-  table(
-    'tloja',
-    group(
-      linhas,
-      'loja'
-    )
-  );
-
-  table(
-    'tdep',
-    group(
-      linhas,
-      'dep'
-    )
-  );
+function card(title,value,meta,vals,color){return `<div class="kcard"><h3>${title}</h3><div class="kval">${value}</div><div class="kmeta">${meta}</div><div class="kchartbox">${spark(vals,color)}</div></div>`;}
+function lineChart(s1,s2=null,title1='Série principal',title2='Série comparativa',money=true){const all=s1.map(x=>x.value).concat(s2?s2.map(x=>x.value):[]);if(!all.length)return '<div class="empty">Sem dados</div>';const w=900,h=250,pl=62,pr=18,pt=18,pb=42,min=Math.min(0,...all),max=Math.max(...all)*1.08||1,yr=max-min||1,x=i=>pl+i*(w-pl-pr)/Math.max(1,s1.length-1),y=v=>pt+(max-v)*(h-pt-pb)/yr;let grid='',labels='';for(let i=0;i<5;i++){const yy=pt+i*(h-pt-pb)/4,val=max-i*yr/4;grid+=`<line class="grid" x1="${pl}" y1="${yy}" x2="${w-pr}" y2="${yy}"/><text x="${pl-7}" y="${yy+3}" text-anchor="end">${money?shortMoney(val):fN(val)}</text>`;}s1.forEach((d,i)=>{if(i===0||i===s1.length-1||s1.length<=8||i%2===0)labels+=`<text x="${x(i)}" y="${h-18}" text-anchor="middle">${d.label}</text>`;});const points=s1.map((d,i)=>`${x(i)},${y(d.value)}`).join(' ');const points2=s2?s2.map((d,i)=>`${x(i)},${y(d.value)}`).join(' '):'';return `<div class="bar-leg"><span><i style="background:var(--accent)"></i>${title1}</span>${s2?`<span><i style="background:var(--teal)"></i>${title2}</span>`:''}</div><svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Evolução mensal"><line class="axis" x1="${pl}" y1="${h-pb}" x2="${w-pr}" y2="${h-pb}"/>${grid}${labels}<polyline class="line-main" points="${points}"/>${s1.map((d,i)=>`<circle class="dot" cx="${x(i)}" cy="${y(d.value)}" r="3"><title>${d.label}: ${money?fM(d.value):fN(d.value)}</title></circle>`).join('')}${s2?`<polyline class="line-alt" points="${points2}"/>${s2.map((d,i)=>`<circle class="dot-alt" cx="${x(i)}" cy="${y(d.value)}" r="3"><title>${d.label}: ${money?fM(d.value):fN(d.value)}</title></circle>`).join('')}`:''}</svg>`;}
+function shortMoney(v){const a=Math.abs(v);if(a>=1e6)return 'R$ '+(v/1e6).toFixed(1).replace('.',',')+' mi';if(a>=1e3)return 'R$ '+(v/1e3).toFixed(0)+' mil';return 'R$ '+fN(v);}
+function horizontalBars(items,valueKey,labelKey,formatter=fM){if(!items.length)return '<div class="empty">Sem dados</div>';const max=Math.max(...items.map(x=>Math.abs(x[valueKey]||0)),1);return items.map((x,i)=>`<div class="bar-row"><div><span class="rank">${i+1}</span>${esc(x[labelKey])}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.abs(x[valueKey]||0)/max*100}%"></div></div><div class="bar-value">${formatter(x[valueKey]||0)}</div></div>`).join('');}
+function renderHome(){const cur=metricMonth(S.fim),pc=prevComp(S.fim),prev=pc?metricMonth(pc):cur;const hcSeries=series('headcount'),grossSeries=series('gross'),costSeries=series('economicCost'),salarySeries=series('salaryAvg');
+  const stores=groupMetrics('estabelecimento',S.fim),storesPrev=groupMetrics('estabelecimento',pc),deps=groupMetrics('setor',S.fim),depsPrev=groupMetrics('setor',pc);attachComparison(stores,storesPrev);attachComparison(deps,depsPrev);
+  const hcEffect=(cur.headcount-prev.headcount)*(prev.salaryAvg||0),salaryEffect=(cur.salaryAvg-prev.salaryAvg)*Math.min(cur.headcount,prev.headcount),otherEffect=(cur.gross-prev.gross)-hcEffect-salaryEffect;
+  const topStore=[...stores].sort((a,b)=>b.deltaEconomic-a.deltaEconomic)[0],topDep=[...deps].sort((a,b)=>b.deltaEconomic-a.deltaEconomic)[0];
+  return toolbar()+`<div class="cards">
+    ${card('Funcionários com movimento',fN(cur.headcount),deltaMeta(cur,prev,'headcount'),hcSeries.map(x=>x.value),'#1d4ed8')}
+    ${card('Vencimentos do mês',fM(cur.gross),deltaMeta(cur,prev,'gross',{money:true}),grossSeries.map(x=>x.value),'#6d28d9')}
+    ${card('Salário-base médio',fM(cur.salaryAvg),deltaMeta(cur,prev,'salaryAvg',{money:true}),salarySeries.map(x=>x.value),'#0f766e')}
+    ${card('Custo econômico estimado',fM(cur.economicCost),deltaMeta(cur,prev,'economicCost',{money:true}),costSeries.map(x=>x.value),'#c2410c')}
+    ${card('Custo caixa estimado',fM(cur.cashCost),`Vencimentos + FGTS informado + INSS/RAT/Terceiros estimados`,series('cashCost').map(x=>x.value),'#b45309')}
+    ${card('Líquido da folha',fM(cur.net),deltaMeta(cur,prev,'net',{money:true}),series('net').map(x=>x.value),'#15803d')}
+    ${card('Horas extras e reflexos',fM(cur.overtime),deltaMeta(cur,prev,'overtime',{money:true,reverse:true}),series('overtime').map(x=>x.value),'#b91c1c')}
+    ${card('Férias + 13º identificados',fM(cur.vacation+cur.thirteenth),`Férias ${fM(cur.vacation)} · 13º/base ${fM(cur.thirteenth)}`,series('vacation').map((x,i)=>x.value+series('thirteenth')[i].value),'#7c3aed')}
+  </div>
+  <div class="analysis">
+    <div class="aitem"><div class="ak">Efeito quantidade</div><div class="av ${cls(hcEffect,true)}">${fM(hcEffect)}</div><div class="as">Estimativa do impacto da variação do quadro, usando o salário médio anterior.</div></div>
+    <div class="aitem"><div class="ak">Efeito salário médio</div><div class="av ${cls(salaryEffect,true)}">${fM(salaryEffect)}</div><div class="as">Estimativa do impacto da mudança do salário-base médio dos funcionários comparáveis.</div></div>
+    <div class="aitem"><div class="ak">Maior pressão por loja</div><div class="av">${topStore?esc(codeOf(topStore.key)):'—'}</div><div class="as">${topStore?`${esc(nameOf(topStore.key))}: ${fM(topStore.deltaEconomic)} no custo econômico.`:'Sem comparação disponível.'}</div></div>
+    <div class="aitem"><div class="ak">Maior pressão por departamento</div><div class="av">${topDep?esc(nameOf(topDep.key)):'—'}</div><div class="as">${topDep?`${fM(topDep.deltaEconomic)} de variação no mês.`:'Sem comparação disponível.'}</div></div>
+  </div>
+  <div class="p2grid"><div class="section"><div class="shead"><h2>Evolução do custo e dos vencimentos</h2><span class="legend">Período selecionado</span></div>${lineChart(costSeries,grossSeries,'Custo econômico','Vencimentos')}</div>
+  <div class="section"><div class="shead"><h2>Departamentos com maior custo</h2><span class="legend">${compLabel(S.fim)}</span></div>${horizontalBars(deps.sort((a,b)=>b.economicCost-a.economicCost).slice(0,10),'economicCost','display')}</div></div>
+  <div class="section"><div class="shead"><h2>Leitura gerencial do mês</h2><span class="legend">Modelo estimativo parametrizável</span></div><div class="callout"><strong>Variação dos vencimentos:</strong> ${fM(cur.gross-prev.gross)}. Pela decomposição preliminar, ${fM(hcEffect)} está associado à quantidade de funcionários, ${fM(salaryEffect)} ao salário-base médio e ${fM(otherEffect)} a horas extras, adicionais, férias, 13º e demais rubricas. A decomposição é gerencial e será refinada conforme classificarmos todas as rubricas.</div></div>`;
 }
-
-function table(id,dados){
-
-  const linhas =
-    dados
-      .map(
-        item => `
-          <tr>
-            <td>
-              ${name(item.key) || 'Não informado'}
-            </td>
-            <td>${num(item.hc)}</td>
-            <td>${brl(item.avg)}</td>
-            <td>${brl(item.gross)}</td>
-            <td>${brl(item.cost)}</td>
-            <td>${brl(item.cpf)}</td>
-          </tr>
-        `
-      )
-      .join('');
-
-  const total =
-    agg(rows());
-
-  $(id).innerHTML =
-    linhas +
-    `
-      <tr class="total">
-        <td>Total filtrado</td>
-        <td>${num(total.hc)}</td>
-        <td>${brl(total.avg)}</td>
-        <td>${brl(total.gross)}</td>
-        <td>${brl(total.cost)}</td>
-        <td>${brl(total.cpf)}</td>
-      </tr>
-    `;
-}
-
-function prevMes(competencia){
-
-  let [ano,mes] =
-    competencia
-      .split('-')
-      .map(Number);
-
-  mes--;
-
-  if(!mes){
-    mes = 12;
-    ano--;
-  }
-
-  return (
-    `${ano}-` +
-    String(mes).padStart(2,'0')
-  );
-}
-
-function buildForm(){
-
-  const labels = {
-    inss:'INSS patronal %',
-    rat:'RAT %',
-    fap:'FAP',
-    terceiros:'Terceiros %',
-    fgts:'FGTS %',
-    p13:'Provisão 13º %',
-    pferias:'Provisão férias %',
-    pterco:'Terço de férias %'
-  };
-
-  $('form').innerHTML =
-    Object
-      .entries(labels)
-      .map(
-        ([campo,label]) => `
-          <div class="f">
-            <label>${label}</label>
-            <input
-              id="p_${campo}"
-              type="number"
-              step="0.0001"
-              value="${P[campo]}"
-            >
-          </div>
-        `
-      )
-      .join('');
-
-  $('salvar').onclick = () => {
-
-    Object
-      .keys(labels)
-      .forEach(
-        campo => {
-          P[campo] =
-            n(
-              $(
-                'p_' + campo
-              ).value
-            );
-        }
-      );
-
-    localStorage.setItem(
-      'folhaParam',
-      JSON.stringify(P)
-    );
-
-    alert(
-      'Parâmetros salvos neste navegador.'
-    );
-
-    render();
-  };
-}
-
-$('bd').onclick = () => {
-
-  $('bd').className = 'on';
-  $('bp').className = '';
-
-  $('dash').classList.remove('hide');
-  $('param').classList.add('hide');
-};
-
-$('bp').onclick = () => {
-
-  $('bp').className = 'on';
-  $('bd').className = '';
-
-  $('param').classList.remove('hide');
-  $('dash').classList.add('hide');
-};
-
-load();
+function groupMetrics(field,comp){if(!comp)return [];let rs=S.rows.filter(r=>r.competencia===comp);if(field!=='estabelecimento'&&S.store!=='all')rs=rs.filter(r=>r.estabelecimento===S.store);if(field!=='setor'&&S.department!=='all')rs=rs.filter(r=>r.setor===S.department);const mp=new Map();for(const r of rs){const k=r[field]||'SEM CADASTRO';if(!mp.has(k))mp.set(k,[]);mp.get(k).push(r);}return [...mp.entries()].map(([key,rows])=>({key,display:field==='estabelecimento'?codeOf(key)+' · '+nameOf(key):nameOf(key),...metric(rows)}));}
+function attachComparison(cur,prev){const p=new Map(prev.map(x=>[x.key,x]));cur.forEach(x=>{const y=p.get(x.key)||{};x.prev=y;x.deltaEconomic=x.economicCost-(y.economicCost||0);x.varEconomic=pct(x.economicCost,y.economicCost||0);x.deltaHeadcount=x.headcount-(y.headcount||0);});return cur;}
+function renderStores(){const pc=prevComp(S.fim),cur=groupMetrics('estabelecimento',S.fim),prev=groupMetrics('estabelecimento',pc);attachComparison(cur,prev);const total=metric(selectedRows({singleMonth:true,ignoreStore:true}));return toolbar()+`<div class="section"><div class="shead"><h2>Análise por loja</h2><span class="legend">${compLabel(S.fim)} comparado a ${pc?compLabel(pc):'—'}</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>Funcionários</th><th>Δ quadro</th><th>Salário médio</th><th>Vencimentos</th><th>Horas extras</th><th>FGTS</th><th>Custo caixa</th><th>Custo econômico</th><th>Custo / funcionário</th><th>Variação</th></tr></thead><tbody>${cur.sort((a,b)=>codeOf(a.key).localeCompare(codeOf(b.key))).map((x,i)=>`<tr><th><span class="rank">${i+1}</span>${esc(codeOf(x.key)+' · '+nameOf(x.key))}</th><td class="cv">${fN(x.headcount)}</td><td class="${cls(x.deltaHeadcount,true)}">${x.deltaHeadcount>0?'+':''}${fN(x.deltaHeadcount)}</td><td>${fM(x.salaryAvg)}</td><td>${fM(x.gross)}</td><td class="${x.overtime>0?'warn':''}">${fM(x.overtime)}</td><td>${fM(x.fgts)}</td><td>${fM(x.cashCost)}</td><td class="cv">${fM(x.economicCost)}</td><td>${fM(x.costAvg)}</td><td class="${cls(x.varEconomic,true)}">${fP(x.varEconomic)}</td></tr>`).join('')}<tr class="total"><th>Total da rede</th><td>${fN(total.headcount)}</td><td>—</td><td>${fM(total.salaryAvg)}</td><td>${fM(total.gross)}</td><td>${fM(total.overtime)}</td><td>${fM(total.fgts)}</td><td>${fM(total.cashCost)}</td><td>${fM(total.economicCost)}</td><td>${fM(total.costAvg)}</td><td>—</td></tr></tbody></table></div></div>
+  <div class="p2grid"><div class="section"><div class="shead"><h2>Custo econômico por loja</h2></div>${horizontalBars([...cur].sort((a,b)=>b.economicCost-a.economicCost),'economicCost','display')}</div><div class="section"><div class="shead"><h2>Quadro por loja</h2></div>${horizontalBars([...cur].sort((a,b)=>b.headcount-a.headcount),'headcount','display',v=>fN(v)+' pessoas')}</div></div>`;}
+function renderDepartments(){const pc=prevComp(S.fim),cur=groupMetrics('setor',S.fim),prev=groupMetrics('setor',pc);attachComparison(cur,prev);return toolbar()+`<div class="callout"><strong>Responsabilização gerencial:</strong> o painel separa custo total, horas extras e custo gerenciável identificado. Alterações legais, dissídios, provisões e decisões corporativas não devem ser atribuídas automaticamente ao líder.</div><div class="section"><div class="shead"><h2>Análise por departamento</h2><span class="legend">${S.store==='all'?'Rede consolidada':esc(codeOf(S.store)+' · '+nameOf(S.store))}</span></div><div class="twrap"><table><thead><tr><th>Departamento</th><th>Líder</th><th>Funcionários</th><th>Δ quadro</th><th>Salário médio</th><th>Vencimentos</th><th>Horas extras</th><th>Custo gerenciável</th><th>Férias/13º</th><th>Custo econômico</th><th>Custo / funcionário</th><th>Variação</th></tr></thead><tbody>${cur.sort((a,b)=>b.economicCost-a.economicCost).map((x,i)=>`<tr><th><span class="rank">${i+1}</span>${esc(nameOf(x.key))}<div class="cp">${esc(codeOf(x.key))}</div></th><td class="left">${esc(S.leaders[x.key]||'Não cadastrado')}</td><td class="cv">${fN(x.headcount)}</td><td class="${cls(x.deltaHeadcount,true)}">${x.deltaHeadcount>0?'+':''}${fN(x.deltaHeadcount)}</td><td>${fM(x.salaryAvg)}</td><td>${fM(x.gross)}</td><td class="${x.overtime>0?'warn':''}">${fM(x.overtime)}</td><td>${fM(x.manageable)}</td><td>${fM(x.vacation+x.thirteenth)}</td><td class="cv">${fM(x.economicCost)}</td><td>${fM(x.costAvg)}</td><td class="${cls(x.varEconomic,true)}">${fP(x.varEconomic)}</td></tr>`).join('')}</tbody></table></div></div>
+  <div class="p2grid"><div class="section"><div class="shead"><h2>Maiores custos por departamento</h2></div>${horizontalBars([...cur].sort((a,b)=>b.economicCost-a.economicCost).slice(0,12),'economicCost','display')}</div><div class="section"><div class="shead"><h2>Maiores valores gerenciáveis</h2></div>${horizontalBars([...cur].sort((a,b)=>b.manageable-a.manageable).slice(0,12),'manageable','display')}</div></div>`;}
+function renderEvolution(){const comps=S.competencias.filter(c=>c>=S.ini&&c<=S.fim),data=comps.map(c=>({c,...metricMonth(c)}));return toolbar()+`<div class="p2grid"><div class="section"><div class="shead"><h2>Custo econômico × vencimentos</h2></div>${lineChart(data.map(x=>({label:compLabel(x.c),value:x.economicCost})),data.map(x=>({label:compLabel(x.c),value:x.gross})),'Custo econômico','Vencimentos')}</div><div class="section"><div class="shead"><h2>Funcionários × salário-base médio</h2></div>${lineChart(data.map(x=>({label:compLabel(x.c),value:x.headcount})),null,'Funcionários','',false)}</div></div>
+  <div class="section"><div class="shead"><h2>Série mensal completa</h2><span class="legend">Filtros aplicados</span></div><div class="twrap"><table><thead><tr><th>Competência</th><th>Funcionários</th><th>Salário médio</th><th>Vencimentos</th><th>Descontos</th><th>Líquido</th><th>FGTS</th><th>INSS estimado</th><th>RAT/FAP</th><th>Terceiros</th><th>Provisões</th><th>Custo caixa</th><th>Custo econômico</th><th>Custo médio</th></tr></thead><tbody>${data.map((x,i)=>`<tr><th>${compLabel(x.c)}</th><td>${fN(x.headcount)}</td><td>${fM(x.salaryAvg)}</td><td>${fM(x.gross)}</td><td>${fM(x.discounts)}</td><td>${fM(x.net)}</td><td>${fM(x.fgts)}</td><td>${fM(x.inss)}</td><td>${fM(x.rat)}</td><td>${fM(x.thirds)}</td><td>${fM(x.provisions+x.provisionCharges)}</td><td>${fM(x.cashCost)}</td><td class="cv">${fM(x.economicCost)}</td><td>${fM(x.costAvg)}</td></tr>`).join('')}</tbody></table></div></div>`;}
+function auditData(){const issues=[];for(const f of FILES){const ok=S.loaded.find(x=>x.path===f.path);if(!ok)issues.push({level:'err',item:`Arquivo ${compLabel(f.competencia)}`,detail:'Não foi carregado do GitHub.'});}
+  const blankStore=S.rows.filter(r=>!r.estabelecimento).length,blankSector=S.rows.filter(r=>!r.setor).length,blankContract=S.rows.filter(r=>!r.contrato).length,blankRub=S.rows.filter(r=>!r.rubrica).length;
+  if(blankStore)issues.push({level:'err',item:'Estabelecimento vazio',detail:`${fN(blankStore)} linhas sem estabelecimento.`});if(blankSector)issues.push({level:'warn',item:'Setor vazio',detail:`${fN(blankSector)} linhas sem setor.`});if(blankContract)issues.push({level:'err',item:'Contrato vazio',detail:`${fN(blankContract)} linhas sem contrato.`});if(blankRub)issues.push({level:'warn',item:'Rubrica vazia',detail:`${fN(blankRub)} linhas sem rubrica.`});
+  const per=new Map();for(const r of S.rows.filter(x=>x.rubrica===RUB.gross)){const k=[r.competencia,r.estabelecimento,r.contrato].join('|');per.set(k,(per.get(k)||0)+1);}const dup=[...per.values()].filter(v=>v>1).length;if(dup)issues.push({level:'warn',item:'Total de vencimentos duplicado',detail:`${fN(dup)} contratos possuem mais de uma linha de total na mesma competência.`});
+  const missingParams=S.stores.filter(s=>!S.params[codeOf(s)]).length;if(missingParams)issues.push({level:'warn',item:'Parâmetros padrão em uso',detail:`${fN(missingParams)} lojas ainda usam os percentuais padrão do sistema.`});
+  const missingLeaders=S.departments.filter(d=>!S.leaders[d]).length;if(missingLeaders)issues.push({level:'warn',item:'Líderes não cadastrados',detail:`${fN(missingLeaders)} departamentos sem responsável cadastrado.`});
+  if(!issues.length)issues.push({level:'ok',item:'Validação concluída',detail:'Nenhuma inconsistência estrutural detectada.'});return issues;}
+function renderAudit(){const issues=auditData();return toolbar()+`<div class="cards">${card('Arquivos carregados',`${S.loaded.length}/${FILES.length}`,S.errors.length?`${S.errors.length} arquivo(s) com erro`:'Todos os arquivos previstos foram lidos',[S.loaded.length],'#15803d')}${card('Lançamentos lidos',fN(S.rows.length),'Linhas das planilhas mensais',[S.rows.length],'#1d4ed8')}${card('Lojas identificadas',fN(S.stores.length),'Estabelecimentos distintos',[S.stores.length],'#6d28d9')}${card('Departamentos identificados',fN(S.departments.length),'Setores distintos',[S.departments.length],'#0f766e')}</div><div class="section"><div class="shead"><h2>Validações e pendências</h2><span class="legend">Estrutura, cadastro e qualidade</span></div><div class="twrap"><table><thead><tr><th>Status</th><th>Validação</th><th>Detalhe</th></tr></thead><tbody>${issues.map(x=>`<tr><th><span class="badge ${x.level==='err'?'bad':x.level==='warn'?'warn':'good'}">${x.level==='err'?'Erro':x.level==='warn'?'Atenção':'OK'}</span></th><td class="left cv">${esc(x.item)}</td><td class="left">${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div></div><div class="section"><div class="shead"><h2>Arquivos de origem</h2></div><div class="twrap"><table><thead><tr><th>Competência</th><th>Arquivo</th><th>Linhas</th><th>Status</th></tr></thead><tbody>${FILES.map(f=>{const x=S.loaded.find(a=>a.path===f.path),e=S.errors.find(a=>a.path===f.path);return `<tr><th>${compLabel(f.competencia)}</th><td class="left">${esc(f.path)}</td><td>${x?fN(x.rows):'—'}</td><td class="center"><span class="badge ${x?'good':'bad'}">${x?'Carregado':'Erro '+esc(e?.error||'')}</span></td></tr>`;}).join('')}</tbody></table></div></div>`;}
+function settingInput(id,label,value,step='0.0001'){return `<div class="field"><label for="${id}">${label}</label><input type="number" id="${id}" step="${step}" value="${value}"></div>`;}
+function renderSettings(){return `<div class="callout"><strong>Como funciona:</strong> nesta versão estática, os cadastros ficam salvos no navegador. Os cálculos históricos usam os percentuais cadastrados por loja. Em uma etapa posterior, poderemos gravar os parâmetros em arquivo JSON ou banco de dados.</div>
+  <div class="section"><div class="shead"><h2>Percentuais padrão</h2><span class="legend">Aplicados quando a loja não possui configuração própria</span></div><div class="form-grid">${settingInput('g_inss','INSS patronal (%)',S.globalParam.inss)}${settingInput('g_rat','RAT (%)',S.globalParam.rat)}${settingInput('g_fap','FAP (multiplicador)',S.globalParam.fap)}${settingInput('g_terceiros','Terceiros (%)',S.globalParam.terceiros)}${settingInput('g_fgts','FGTS (%)',S.globalParam.fgts)}${settingInput('g_13','Provisão 13º (%)',S.globalParam.prov13)}${settingInput('g_ferias','Provisão férias (%)',S.globalParam.provFerias)}${settingInput('g_terco','Provisão 1/3 férias (%)',S.globalParam.provTerco)}</div><div class="small" style="margin-top:8px">Os padrões podem ser alterados aqui e serão aplicados às lojas sem configuração própria.</div></div>
+  <div class="section"><div class="shead"><h2>Parâmetros por loja</h2><span class="legend">Valores percentuais, exceto FAP</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>INSS</th><th>RAT</th><th>FAP</th><th>Terceiros</th><th>FGTS</th><th>13º</th><th>Férias</th><th>1/3 férias</th></tr></thead><tbody>${S.stores.map(s=>{const c=codeOf(s),p=paramFor(s);return `<tr data-store="${esc(c)}"><th>${esc(c+' · '+nameOf(s))}</th>${['inss','rat','fap','terceiros','fgts','prov13','provFerias','provTerco'].map(k=>`<td><input class="store-param" data-key="${k}" type="number" step="0.0001" value="${p[k]}" style="width:88px;padding:6px;border:1px solid var(--line);border-radius:7px;text-align:right"></td>`).join('')}</tr>`;}).join('')}</tbody></table></div></div>
+  <div class="section"><div class="shead"><h2>Líderes por departamento</h2><span class="legend">Usado no painel de responsabilização</span></div><div class="twrap"><table><thead><tr><th>Departamento</th><th>Líder responsável</th></tr></thead><tbody>${S.departments.map(d=>`<tr data-department="${esc(d)}"><th>${esc(codeOf(d)+' · '+nameOf(d))}</th><td><input class="leader-input" type="text" value="${esc(S.leaders[d]||'')}" placeholder="Nome do líder" style="width:100%;min-width:260px;padding:7px;border:1px solid var(--line);border-radius:7px"></td></tr>`).join('')}</tbody></table></div><div class="actions"><button class="btn primary" id="saveSettings">Salvar parametrização</button><button class="btn danger" id="resetSettings">Restaurar padrões</button></div></div>`;}
+function bindSettings(){const save=document.getElementById('saveSettings');if(!save)return;save.onclick=()=>{S.globalParam={inss:num(document.getElementById('g_inss').value),rat:num(document.getElementById('g_rat').value),fap:num(document.getElementById('g_fap').value),terceiros:num(document.getElementById('g_terceiros').value),fgts:num(document.getElementById('g_fgts').value),prov13:num(document.getElementById('g_13').value),provFerias:num(document.getElementById('g_ferias').value),provTerco:num(document.getElementById('g_terco').value)};document.querySelectorAll('tr[data-store]').forEach(tr=>{const c=tr.dataset.store,Sv={};tr.querySelectorAll('.store-param').forEach(i=>Sv[i.dataset.key]=num(i.value));S.params[c]=Sv;});document.querySelectorAll('tr[data-department]').forEach(tr=>{const v=tr.querySelector('.leader-input').value.trim();if(v)S.leaders[tr.dataset.department]=v;else delete S.leaders[tr.dataset.department];});saveLocal();alert('Parametrização salva neste navegador.');render();};document.getElementById('resetSettings').onclick=()=>{if(confirm('Apagar parâmetros e líderes salvos neste navegador?')){S.params={};S.leaders={};S.globalParam={...DEFAULT_PARAM};saveLocal();render();}};}
+function render(){if(!S.competencias.length){document.getElementById('main').innerHTML=`<div class="errmsg"><strong>Não foi possível ler as planilhas.</strong><br>Verifique se os arquivos permanecem públicos, se os nomes não foram alterados e se a biblioteca XLSX foi carregada.</div>`;return;}document.querySelectorAll('#moduleButtons .btn').forEach(b=>b.classList.toggle('active',b.dataset.module===S.module));let html='';if(S.module==='home')html=renderHome();else if(S.module==='stores')html=renderStores();else if(S.module==='departments')html=renderDepartments();else if(S.module==='evolution')html=renderEvolution();else if(S.module==='audit')html=renderAudit();else html=renderSettings();document.getElementById('main').innerHTML=html;bindToolbar();bindSettings();}
+document.getElementById('moduleButtons').addEventListener('click',e=>{const b=e.target.closest('[data-module]');if(!b)return;S.module=b.dataset.module;render();});
+if(typeof XLSX==='undefined'){document.getElementById('main').innerHTML='<div class="errmsg"><strong>Biblioteca de leitura XLSX não carregada.</strong><br>Verifique a conexão com a internet e recarregue a página.</div>';}else{loadAll();}
 </script>
-
 </body>
 </html>
