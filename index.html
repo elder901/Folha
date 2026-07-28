@@ -48,9 +48,57 @@ tr.total th,tr.total td{background:#f0f5ff;font-weight:800}.rank{display:inline-
 @media(max-width:1100px){.cards,.analysis{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.p2grid,.compare-toolbar,.compare-summary{grid-template-columns:1fr}.summary-grid{grid-template-columns:repeat(2,1fr)}.bar-row{grid-template-columns:1fr}.bar-value{text-align:left}.header,.controls,.main{padding-left:10px;padding-right:10px}}
 @media(max-width:520px){.cards,.analysis,.form-grid,.summary-grid{grid-template-columns:1fr}.tg select,.tg input{min-width:130px}.kval{font-size:18px}}
+
+/* Barreira visual de acesso (client-side) */
+body.locked{overflow:hidden;background:#eef2f7}
+body.locked>.wrap{display:none}
+.access-gate{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 52%,#e0f2fe 100%)}
+.access-card{width:min(420px,100%);background:#fff;border:1px solid #dbe3ef;border-radius:22px;padding:28px;box-shadow:0 24px 70px rgba(15,23,42,.16)}
+.access-brand{display:flex;align-items:center;gap:13px;margin-bottom:20px}
+.access-logo{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:#eef2ff;color:#1d4ed8}
+.access-title{font-size:21px;font-weight:800;color:#172033}
+.access-sub{font-size:12px;color:#64748b;margin-top:3px}
+.access-label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:6px}
+.access-input{width:100%;padding:12px 13px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;color:#172033;font-size:14px;outline:none}
+.access-input:focus{border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(29,78,216,.12)}
+.access-button{width:100%;margin-top:11px;padding:11px 14px;border:0;border-radius:11px;background:#1d4ed8;color:#fff;font-size:13px;font-weight:800;cursor:pointer}
+.access-button:hover{background:#1e40af}
+.access-button:disabled{opacity:.6;cursor:wait}
+.access-error{min-height:18px;margin-top:9px;color:#b91c1c;font-size:12px;font-weight:700;text-align:center}
+.access-note{margin-top:14px;padding-top:13px;border-top:1px solid #e5e7eb;color:#64748b;font-size:11px;line-height:1.5;text-align:center}
+.access-logout{padding:5px 9px;border:1px solid #dbe3ef;border-radius:8px;background:#fff;color:#475569;font-size:10px;font-weight:700;cursor:pointer}
+.access-logout:hover{background:#f8fafc}
+@media(max-width:520px){.access-card{padding:22px;border-radius:18px}}
+
 </style>
 </head>
-<body>
+<body class="locked">
+<div id="accessGate" class="access-gate" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
+  <div class="access-card">
+    <div class="access-brand">
+      <div class="access-logo" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8,4 C8,4 18,10 18,19 C18,28 8,34 8,34" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M30,4 C30,4 20,10 20,19 C20,28 30,34 30,34" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="10" y1="9" x2="28" y2="9" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+          <line x1="13" y1="14" x2="25" y2="14" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+          <line x1="11" y1="19" x2="27" y2="19" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+          <line x1="13" y1="24" x2="25" y2="24" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+          <line x1="10" y1="29" x2="28" y2="29" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="access-title" id="accessTitle">DNA da Folha</div>
+        <div class="access-sub">Acesso restrito · Controladoria de Pessoal</div>
+      </div>
+    </div>
+    <label class="access-label" for="accessPassword">Senha de acesso</label>
+    <input class="access-input" id="accessPassword" type="password" autocomplete="current-password" placeholder="Digite a senha" autofocus>
+    <button class="access-button" id="accessSubmit" type="button">Entrar no dashboard</button>
+    <div class="access-error" id="accessError" role="alert" aria-live="polite"></div>
+    <div class="access-note">A sessão permanece liberada apenas nesta aba do navegador. Ao sair ou fechar a aba, a senha será solicitada novamente.</div>
+  </div>
+</div>
 <div class="wrap"><div class="header">
   <div style="display:flex;align-items:center;gap:14px">
     <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" aria-label="DNA da Folha">
@@ -64,7 +112,7 @@ tr.total th,tr.total td{background:#f0f5ff;font-weight:800}.rank{display:inline-
     </svg>
     <div><div class="header-title">DNA da Folha</div><div class="header-sub">Pessoas, custo e eficiência · Controladoria de Pessoal</div></div>
   </div>
-  <div style="font-size:11px;color:var(--muted)" id="hinfo">Aguardando dados</div>
+  <div style="display:flex;align-items:center;gap:10px"><div style="font-size:11px;color:var(--muted)" id="hinfo">Aguardando dados</div><button class="access-logout" id="logoutAccess" type="button">Sair</button></div>
 </div></div>
 <div class="wrap"><div class="controls">
   <div class="cg"><label>Módulo</label><div class="btngrp" id="moduleButtons">
@@ -390,7 +438,52 @@ function renderSettings(){return `<div class="callout"><strong>Como funciona:</s
 function bindSettings(){const save=document.getElementById('saveSettings');if(!save)return;save.onclick=()=>{S.globalParam={inss:num(document.getElementById('g_inss').value),rat:num(document.getElementById('g_rat').value),fap:num(document.getElementById('g_fap').value),terceiros:num(document.getElementById('g_terceiros').value),fgts:num(document.getElementById('g_fgts').value),prov13:num(document.getElementById('g_13').value),provFerias:num(document.getElementById('g_ferias').value),provTerco:num(document.getElementById('g_terco').value)};document.querySelectorAll('tr[data-store]').forEach(tr=>{const c=tr.dataset.store,Sv={};tr.querySelectorAll('.store-param').forEach(i=>Sv[i.dataset.key]=num(i.value));S.params[c]=Sv;});document.querySelectorAll('tr[data-department]').forEach(tr=>{const v=tr.querySelector('.leader-input').value.trim();if(v)S.leaders[tr.dataset.department]=v;else delete S.leaders[tr.dataset.department];});saveLocal();alert('Parametrização salva neste navegador.');render();};document.getElementById('resetSettings').onclick=()=>{if(confirm('Apagar parâmetros e líderes salvos neste navegador?')){S.params={};S.leaders={};S.globalParam={...DEFAULT_PARAM};saveLocal();render();}};}
 function render(){if(!S.competencias.length){document.getElementById('main').innerHTML=`<div class="errmsg"><strong>Não foi possível ler as planilhas.</strong><br>Verifique se os arquivos permanecem públicos, se os nomes não foram alterados e se a biblioteca XLSX foi carregada.</div>`;return;}document.querySelectorAll('#moduleButtons .btn').forEach(b=>b.classList.toggle('active',b.dataset.module===S.module));let html='';if(S.module==='home')html=renderHome();else if(S.module==='stores')html=renderStores();else if(S.module==='departments')html=renderDepartments();else if(S.module==='evolution')html=renderEvolution();else if(S.module==='comparison')html=renderComparison();else if(S.module==='drill')html=renderDrill();else if(S.module==='audit')html=renderAudit();else html=renderSettings();document.getElementById('main').innerHTML=html;bindToolbar();bindComparisonToolbar();bindDrill();bindDrillEntries();bindSettings();}
 document.getElementById('moduleButtons').addEventListener('click',e=>{const b=e.target.closest('[data-module]');if(!b)return;S.module=b.dataset.module;render();});
-if(typeof XLSX==='undefined'){document.getElementById('main').innerHTML='<div class="errmsg"><strong>Biblioteca de leitura XLSX não carregada.</strong><br>Verifique a conexão com a internet e recarregue a página.</div>';}else{loadAll();}
+const ACCESS_HASH='eb8b1b001fa9453a76305723df444230e18a31e19a09ebfe6e5612006bbec12b';
+const ACCESS_SESSION_KEY='dnaFolha.access.v1';
+let dashboardStarted=false;
+async function hashAccessPassword(value){
+  const data=new TextEncoder().encode(value);
+  const digest=await crypto.subtle.digest('SHA-256',data);
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function startProtectedDashboard(){
+  document.body.classList.remove('locked');
+  document.getElementById('accessGate').style.display='none';
+  if(dashboardStarted)return;
+  dashboardStarted=true;
+  if(typeof XLSX==='undefined'){
+    document.getElementById('main').innerHTML='<div class="errmsg"><strong>Biblioteca de leitura XLSX não carregada.</strong><br>Verifique a conexão com a internet e recarregue a página.</div>';
+  }else{
+    loadAll();
+  }
+}
+async function submitAccess(){
+  const input=document.getElementById('accessPassword');
+  const button=document.getElementById('accessSubmit');
+  const error=document.getElementById('accessError');
+  const value=input.value;
+  if(!value){error.textContent='Digite a senha para continuar.';input.focus();return;}
+  button.disabled=true;button.textContent='Validando…';error.textContent='';
+  try{
+    const hash=await hashAccessPassword(value);
+    if(hash===ACCESS_HASH){
+      sessionStorage.setItem(ACCESS_SESSION_KEY,'ok');
+      input.value='';
+      startProtectedDashboard();
+    }else{
+      error.textContent='Senha incorreta.';
+      input.select();
+    }
+  }catch(e){
+    error.textContent='Não foi possível validar a senha neste navegador.';
+  }finally{
+    button.disabled=false;button.textContent='Entrar no dashboard';
+  }
+}
+document.getElementById('accessSubmit').addEventListener('click',submitAccess);
+document.getElementById('accessPassword').addEventListener('keydown',e=>{if(e.key==='Enter')submitAccess();});
+document.getElementById('logoutAccess').addEventListener('click',()=>{sessionStorage.removeItem(ACCESS_SESSION_KEY);location.reload();});
+if(sessionStorage.getItem(ACCESS_SESSION_KEY)==='ok')startProtectedDashboard();
 </script>
 </body>
 </html>
