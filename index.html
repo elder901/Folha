@@ -159,7 +159,7 @@ body.locked>.wrap{display:none}
 <script>
 'use strict';
 const BASE='https://raw.githubusercontent.com/elder901/Folha/main';
-const FILES=[
+let FILES=[
   {competencia:'2025-06',path:'BI Por departamento/2025/06 2025.xlsx'},
   {competencia:'2025-07',path:'BI Por departamento/2025/07 2025.xlsx'},
   {competencia:'2025-08',path:'BI Por departamento/2025/08 2025.xlsx'},
@@ -172,9 +172,10 @@ const FILES=[
   {competencia:'2026-03',path:'BI Por departamento/2026/03 2026.xlsx'},
   {competencia:'2026-04',path:'BI Por departamento/2026/04 2026.xlsx'},
   {competencia:'2026-05',path:'BI Por departamento/2026/05 2026.xlsx'},
-  {competencia:'2026-06',path:'BI Por departamento/2026/06 2026.xlsx'}
+  {competencia:'2026-06',path:'BI Por departamento/2026/06 2026.xlsx'},
+  {competencia:'2026-07',path:'BI Por departamento/2026/07 2026.xlsx'}
 ];
-const DOBRA_FILES=[
+let DOBRA_FILES=[
   {competencia:'2026-01',path:'Dobras 2026/01 2026.xlsx'},
   {competencia:'2026-02',path:'Dobras 2026/02 2026.xlsx'},
   {competencia:'2026-03',path:'Dobras 2026/03 2026.xlsx'},
@@ -183,6 +184,86 @@ const DOBRA_FILES=[
   {competencia:'2026-06',path:'Dobras 2026/06 2026.xlsx'},
   {competencia:'2026-07',path:'Dobras 2026/07 2026.xlsx'}
 ];
+// ============================================================
+// AUTO-DESCOBERTA DE ARQUIVOS via GitHub Contents API
+// Sobrescreve FILES e DOBRA_FILES (as listas acima viram fallback).
+// Cache em localStorage por 10 min. Botão "Atualizar dados" no header.
+// ============================================================
+const GH_REPO='elder901/Folha', GH_BRANCH='main', GH_TTL=10*60*1000;
+// Reconhece "MM AAAA.xlsx" (ex.: "07 2026.xlsx"), com 1+ espaço entre mês e ano.
+const GH_RX_XLSX=/^(\d{1,2})\s+(\d{4})\.xlsx$/i;
+async function ghListar(dir,force){
+  const ck='ghFolha:'+dir;
+  if(!force){try{const hit=JSON.parse(localStorage.getItem(ck)||'null');if(hit&&Date.now()-hit.t<GH_TTL)return hit.v;}catch(e){}}
+  const r=await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${dir.split('/').map(encodeURIComponent).join('/')}?ref=${GH_BRANCH}`);
+  if(!r.ok)throw new Error(`GitHub API ${r.status} em ${dir}`);
+  const v=await r.json();
+  try{localStorage.setItem(ck,JSON.stringify({t:Date.now(),v}));}catch(e){}
+  return v;
+}
+// Descobre folhas: BI Por departamento/<ano>/MM AAAA.xlsx (varre as subpastas de ano).
+async function descobrirFolhas(force){
+  const raiz=await ghListar('BI Por departamento',force);
+  const anos=raiz.filter(a=>a.type==='dir'&&/^\d{4}$/.test(a.name)).map(a=>a.name).sort();
+  const lista=[];
+  for(const ano of anos){
+    const arquivos=await ghListar('BI Por departamento/'+ano,force);
+    for(const a of arquivos){
+      if(a.type!=='file')continue;
+      const m=a.name.match(GH_RX_XLSX);
+      if(!m){console.warn('[GH] folha ignorada:',a.name);continue;}
+      const mes=String(+m[1]).padStart(2,'0');
+      lista.push({competencia:`${m[2]}-${mes}`,path:`BI Por departamento/${ano}/${a.name}`});
+    }
+  }
+  lista.sort((a,b)=>a.competencia.localeCompare(b.competencia));
+  return lista;
+}
+// Descobre dobras: pastas "Dobras <ano>" na raiz, cada uma com MM AAAA.xlsx.
+async function descobrirDobras(force){
+  const raiz=await ghListar('',force);
+  const pastas=raiz.filter(a=>a.type==='dir'&&/^Dobras\s+\d{4}$/i.test(a.name)).map(a=>a.name).sort();
+  const lista=[];
+  for(const pasta of pastas){
+    const arquivos=await ghListar(pasta,force);
+    for(const a of arquivos){
+      if(a.type!=='file')continue;
+      const m=a.name.match(GH_RX_XLSX);
+      if(!m){console.warn('[GH] dobra ignorada:',a.name);continue;}
+      const mes=String(+m[1]).padStart(2,'0');
+      lista.push({competencia:`${m[2]}-${mes}`,path:`${pasta}/${a.name}`});
+    }
+  }
+  lista.sort((a,b)=>a.competencia.localeCompare(b.competencia));
+  return lista;
+}
+async function descobrirARQ(force){
+  let ok=true;
+  try{const l=await descobrirFolhas(force);if(l.length){FILES=l;console.log(`[GH] folhas: ${l.length} · último=${l.at(-1).competencia}`);}else{console.warn('[GH] folhas: 0 no padrão — mantendo fallback');ok=false;}}
+  catch(e){console.error('[GH] folhas falhou:',e.message,'— mantendo fallback');ok=false;}
+  try{const l=await descobrirDobras(force);if(l.length){DOBRA_FILES=l;console.log(`[GH] dobras: ${l.length} · último=${l.at(-1).competencia}`);}else{console.warn('[GH] dobras: 0 no padrão — mantendo fallback');ok=false;}}
+  catch(e){console.error('[GH] dobras falhou:',e.message,'— mantendo fallback');ok=false;}
+  return ok;
+}
+window.atualizarDadosFolha=async function(){
+  Object.keys(localStorage).filter(k=>k.startsWith('ghFolha:')).forEach(k=>localStorage.removeItem(k));
+  S.cache={};
+  const btn=document.getElementById('btnAtualizar');
+  if(btn){btn.textContent='Atualizando…';btn.disabled=true;}
+  await descobrirARQ(true);
+  if(btn){btn.textContent='↻ Atualizar dados';btn.disabled=false;}
+  await loadAll();
+};
+function injetarBotaoAtualizar(){
+  const alvo=document.getElementById('hinfo');
+  if(!alvo||document.getElementById('btnAtualizar'))return;
+  const b=document.createElement('button');
+  b.id='btnAtualizar';b.className='access-logout';b.type='button';b.textContent='↻ Atualizar dados';
+  b.title='Relê as pastas no GitHub e descarta o cache';
+  b.style.marginRight='6px';
+  b.addEventListener('click',()=>window.atualizarDadosFolha());
+  alvo.parentNode.insertBefore(b,alvo.nextSibling);
+}
 const DEFAULT_PARAM={inss:20,rat:2,fap:1,terceiros:5.8,fgts:8,prov13:8.3333,provFerias:8.3333,provTerco:2.7778};
 const S={module:'home',rows:[],loaded:[],errors:[],dobras:[],dobraLoaded:[],dobraErrors:[],dobraCompetencias:[],employeeIndex:null,cache:{},competencias:[],stores:[],departments:[],ini:null,fim:null,store:'all',department:'all',compAIni:null,compAFim:null,compBIni:null,compBFim:null,compStore:'all',compDepartment:'all',diagAIni:null,diagAFim:null,diagBIni:null,diagBFim:null,diagStore:'all',diagDepartment:'all',leaderAIni:null,leaderAFim:null,leaderBIni:null,leaderBFim:null,leaderStore:'all',leaderDepartment:'all',leaderStatus:'all',dobraIni:null,dobraFim:null,dobraStore:'all',dobraDepartment:'all',dobraStatus:'all',dobraEmployeeSearch:'',drillStore:null,drillDepartment:null,drillContract:null,drillSearch:'',params:{},leaders:{},storeLeaders:{},globalParam:{...DEFAULT_PARAM}};
 const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -276,10 +357,13 @@ function buildEmployeeIndex(){const grouped=new Map(),anyCpf=new Map(),nameIndex
 function enrichDobras(){const index=buildEmployeeIndex();S.dobras=S.dobras.map(d=>{if(!validCpfShape(d.cpf))return {...d,status:'invalid',statusLabel:'CPF inválido'};if(!S.competencias.includes(d.competencia))return {...d,status:'awaiting',statusLabel:'Aguardando folha da competência'};const found=index.get(d.competencia+'|'+d.cpf);if(!found){const comps=[...(S.employeeCpfAny?.get(d.cpf)||[])].sort(),nk=normalizePersonName(d.nomeInformado),byName=nk?S.employeeNameIndex?.get(d.competencia+'|'+nk):null;if(comps.length)return {...d,status:'other_month',statusLabel:'CPF existe em outra competência',otherCompetencias:comps};if(byName?.size)return {...d,status:'name_mismatch',statusLabel:'Nome localizado; CPF divergente',nameCandidates:[...byName.values()]};return {...d,status:'missing',statusLabel:'CPF não localizado na folha'};}if(found.status==='ambiguous')return {...d,status:'ambiguous',statusLabel:'CPF com vínculo ambíguo',candidates:found.candidates};return {...d,status:'matched',statusLabel:'Cruzado',estabelecimento:found.estabelecimento,setor:found.setor,contrato:found.contrato,funcionario:found.funcionario||d.nomeInformado,leader:leaderFor(found.estabelecimento,found.setor)};});}
 
 async function loadAll(){
-  loadLocal();S.rows=[];S.loaded=[];S.errors=[];S.dobras=[];S.dobraLoaded=[];S.dobraErrors=[];const progress=document.getElementById('progressBar'),label=document.getElementById('progressText'),totalFiles=FILES.length+DOBRA_FILES.length;let step=0;
-  for(let i=0;i<FILES.length;i++){const f=FILES[i];label.textContent=`Lendo folha ${compLabel(f.competencia)} · arquivo ${step+1} de ${totalFiles}`;try{const rows=await loadFile(f,i);S.rows.push(...rows);S.loaded.push({...f,rows:rows.length,...(rows.meta||{})});}catch(e){S.errors.push({...f,error:e.message});}step++;progress.style.width=(step/totalFiles*100).toFixed(1)+'%';}
+  loadLocal();injetarBotaoAtualizar();
+  const lbl0=document.getElementById('progressText');if(lbl0)lbl0.textContent='Descobrindo arquivos disponíveis no GitHub…';
+  await descobrirARQ(false);
+  S.rows=[];S.loaded=[];S.errors=[];S.dobras=[];S.dobraLoaded=[];S.dobraErrors=[];const progress=document.getElementById('progressBar'),label=document.getElementById('progressText'),totalFiles=FILES.length+DOBRA_FILES.length;let step=0;
+  for(let i=0;i<FILES.length;i++){const f=FILES[i];if(label)label.textContent=`Lendo folha ${compLabel(f.competencia)} · arquivo ${step+1} de ${totalFiles}`;try{const rows=await loadFile(f,i);S.rows.push(...rows);S.loaded.push({...f,rows:rows.length,...(rows.meta||{})});}catch(e){S.errors.push({...f,error:e.message});}step++;if(progress)progress.style.width=(step/totalFiles*100).toFixed(1)+'%';}
   S.competencias=[...new Set(S.rows.map(r=>r.competencia))].sort();S.stores=[...new Set(S.rows.map(r=>r.estabelecimento).filter(Boolean))].sort((a,b)=>codeOf(a).localeCompare(codeOf(b)));S.departments=[...new Set(S.rows.map(r=>r.setor).filter(Boolean))].sort((a,b)=>nameOf(a).localeCompare(nameOf(b),'pt-BR'));
-  for(let i=0;i<DOBRA_FILES.length;i++){const f=DOBRA_FILES[i];label.textContent=`Lendo dobras ${compLabel(f.competencia)} · arquivo ${step+1} de ${totalFiles}`;try{const result=await loadDobraFile(f);S.dobras.push(...result.rows);S.dobraLoaded.push({...f,rows:result.rows.length,headerRow:result.headerRow,headers:result.headers,cpfStats:result.cpfStats,sheetName:result.sheetName});}catch(e){S.dobraErrors.push({...f,error:e.message});}step++;progress.style.width=(step/totalFiles*100).toFixed(1)+'%';}
+  for(let i=0;i<DOBRA_FILES.length;i++){const f=DOBRA_FILES[i];if(label)label.textContent=`Lendo dobras ${compLabel(f.competencia)} · arquivo ${step+1} de ${totalFiles}`;try{const result=await loadDobraFile(f);S.dobras.push(...result.rows);S.dobraLoaded.push({...f,rows:result.rows.length,headerRow:result.headerRow,headers:result.headers,cpfStats:result.cpfStats,sheetName:result.sheetName});}catch(e){S.dobraErrors.push({...f,error:e.message});}step++;if(progress)progress.style.width=(step/totalFiles*100).toFixed(1)+'%';}
   S.dobraCompetencias=[...new Set(S.dobraLoaded.map(r=>r.competencia))].sort();enrichDobras();
   S.fim=S.competencias.at(-1)||null;S.ini=S.competencias[Math.max(0,S.competencias.length-12)]||S.competencias[0]||null;S.compBIni=S.fim;S.compBFim=S.fim;
   if(S.fim){const [cy,cm]=S.fim.split('-').map(Number),yearAgo=`${cy-1}-${String(cm).padStart(2,'0')}`,previous=prevComp(S.fim);S.compAIni=S.competencias.includes(yearAgo)?yearAgo:(previous||S.fim);S.compAFim=S.compAIni;}
