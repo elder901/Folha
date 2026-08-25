@@ -266,7 +266,7 @@ function injetarBotaoAtualizar(){
   alvo.parentNode.insertBefore(b,alvo.nextSibling);
 }
 const DEFAULT_PARAM={inss:20,rat:2,fap:1,terceiros:5.8,fgts:8,prov13:8.3333,provFerias:8.3333,provTerco:2.7778};
-const S={module:'home',rows:[],loaded:[],errors:[],dobras:[],dobraLoaded:[],dobraErrors:[],dobraCompetencias:[],employeeIndex:null,cache:{},competencias:[],stores:[],departments:[],ini:null,fim:null,store:'all',department:'all',compAIni:null,compAFim:null,compBIni:null,compBFim:null,compStore:'all',compDepartment:'all',diagAIni:null,diagAFim:null,diagBIni:null,diagBFim:null,diagStore:'all',diagDepartment:'all',leaderAIni:null,leaderAFim:null,leaderBIni:null,leaderBFim:null,leaderStore:'all',leaderDepartment:'all',leaderStatus:'all',dobraIni:null,dobraFim:null,dobraStore:'all',dobraDepartment:'all',dobraStatus:'all',dobraEmployeeSearch:'',leaveMotive:'all',drillStore:null,drillDepartment:null,drillContract:null,drillSearch:'',params:{},leaders:{},storeLeaders:{},globalParam:{...DEFAULT_PARAM}};
+const S={module:'home',rows:[],loaded:[],errors:[],dobras:[],dobraLoaded:[],dobraErrors:[],dobraCompetencias:[],employeeIndex:null,cache:{},competencias:[],stores:[],departments:[],ini:null,fim:null,store:'all',department:'all',compAIni:null,compAFim:null,compBIni:null,compBFim:null,compStore:'all',compDepartment:'all',diagAIni:null,diagAFim:null,diagBIni:null,diagBFim:null,diagStore:'all',diagDepartment:'all',leaderAIni:null,leaderAFim:null,leaderBIni:null,leaderBFim:null,leaderStore:'all',leaderDepartment:'all',leaderStatus:'all',dobraIni:null,dobraFim:null,dobraStore:'all',dobraDepartment:'all',dobraStatus:'all',dobraEmployeeSearch:'',leaveMotive:'all',leaveContract:null,leaveContractStore:null,drillStore:null,drillDepartment:null,drillContract:null,drillSearch:'',params:{},leaders:{},storeLeaders:{},globalParam:{...DEFAULT_PARAM}};
 const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 const RUB={
   gross:'Total dos Vencimentos',discounts:'Total dos Descontos',net:'Líquido da Folha',salary:'Salário Mês (SMES)',
@@ -676,7 +676,7 @@ function bindSettings(){const save=document.getElementById('saveSettings');if(!s
 /* ===== Módulo Afastamentos ===== */
 const LEAVE_HOURS_PER_DAY=220/30;
 const LEAVE_TYPES=[
-  {key:'acidente',label:'Acidente ou doença do trabalho',payer:'INSS (B91)',suspends:true,tone:'red',test:r=>/^Dias de Aux\.? ?Acid/i.test(r)},
+  {key:'acidente',label:'Acidente ou doença do trabalho',payer:'INSS (B91)',suspends:true,tone:'red',dedupe:true,test:r=>/^Dias de Aux\.? ?Acid/i.test(r)},
   {key:'auxdoenca',label:'Auxílio-doença',payer:'INSS (B31)',suspends:true,tone:'red',test:r=>/^Dias de Auxílio Doença/i.test(r)},
   {key:'maternidade',label:'Licença-maternidade',payer:'INSS (compensado)',suspends:true,tone:'yellow',test:r=>/^Dias de Licença Maternidade/i.test(r)},
   {key:'paternidade',label:'Licença-paternidade',payer:'Empresa',suspends:false,tone:'gray',test:r=>/^Dias de Licença Paternidade/i.test(r)},
@@ -697,10 +697,14 @@ function leaveRegister({ini=S.ini,fim=S.fim,store=S.store,department=S.departmen
     if(motive!=='all'&&t.key!==motive)continue;
     const k=[r.competencia,r.estabelecimento,r.contrato,t.key].join('|||');
     let o=map.get(k);
-    if(!o){o={competencia:r.competencia,store:r.estabelecimento,department:r.setor,contract:r.contrato,type:t,hours:0,value:0};map.set(k,o);}
-    o.hours+=r.quantidade;o.value+=r.valor;if(r.setor)o.department=r.setor;
+    if(!o){o={competencia:r.competencia,store:r.estabelecimento,department:r.setor,contract:r.contrato,type:t,variants:new Map()};map.set(k,o);}
+    const v=o.variants.get(r.rubrica)||{hours:0,value:0};v.hours+=r.quantidade;v.value+=r.valor;o.variants.set(r.rubrica,v);
+    if(r.setor)o.department=r.setor;
   }
-  return [...map.values()].map(o=>({...o,days:o.hours/LEAVE_HOURS_PER_DAY}));
+  return [...map.values()].map(o=>{const vs=[...o.variants.values()];
+    const hours=o.type.dedupe?Math.max(...vs.map(v=>v.hours)):vs.reduce((s,v)=>s+v.hours,0);
+    const value=o.type.dedupe?Math.max(...vs.map(v=>v.value)):vs.reduce((s,v)=>s+v.value,0);
+    return {...o,hours,value,days:hours/LEAVE_HOURS_PER_DAY};});
 }
 function leaveHistoryKeys(){
   const set=new Set();
@@ -746,13 +750,75 @@ function bindLeaves(){
   const el=document.getElementById('leaveMotive');if(!el)return;
   el.value=S.leaveMotive;el.onchange=()=>{S.leaveMotive=el.value;render();};
   document.querySelectorAll('[data-leave-contract]').forEach(n=>n.addEventListener('click',()=>{
-    S.drillStore=n.dataset.leaveStore||null;S.drillDepartment=n.dataset.leaveDepartment||null;S.drillContract=n.dataset.leaveContract||null;S.module='drill';render();
+    S.leaveContract=n.dataset.leaveContract||null;S.leaveContractStore=n.dataset.leaveStore||null;render();
   }));
-  document.querySelectorAll('[data-leave-department]').forEach(n=>n.addEventListener('click',()=>{
-    S.drillStore=n.dataset.leaveStore||null;S.drillDepartment=n.dataset.leaveDepartment||null;S.drillContract=null;S.module='drill';render();
+  const back=document.getElementById('leaveBack');
+  if(back)back.onclick=()=>{S.leaveContract=null;S.leaveContractStore=null;render();};
+  document.querySelectorAll('[data-leave-focus-department]').forEach(n=>n.addEventListener('click',()=>{
+    S.store=n.dataset.leaveFocusStore||'all';S.department=n.dataset.leaveFocusDepartment||'all';S.leaveContract=null;S.leaveContractStore=null;render();
   }));
 }
+function leavePersonHistory(contract,store){
+  const map=new Map();
+  for(const r of S.rows){
+    if(r.contrato!==contract)continue;
+    if(store&&r.estabelecimento!==store)continue;
+    const t=leaveTypeOf(r.rubrica);if(!t)continue;
+    const k=r.competencia+'|||'+t.key;
+    let o=map.get(k);
+    if(!o){o={competencia:r.competencia,type:t,store:r.estabelecimento,department:r.setor,variants:new Map()};map.set(k,o);}
+    const v=o.variants.get(r.rubrica)||{hours:0,value:0};v.hours+=r.quantidade;v.value+=r.valor;o.variants.set(r.rubrica,v);
+    if(r.setor)o.department=r.setor;
+  }
+  return [...map.values()].map(o=>{const vs=[...o.variants.values()];
+    const hours=o.type.dedupe?Math.max(...vs.map(v=>v.hours)):vs.reduce((s,v)=>s+v.hours,0);
+    const value=o.type.dedupe?Math.max(...vs.map(v=>v.value)):vs.reduce((s,v)=>s+v.value,0);
+    return {...o,hours,value,days:hours/LEAVE_HOURS_PER_DAY};}).sort((a,b)=>a.competencia.localeCompare(b.competencia));
+}
+function leavePersonPay(contract,store){
+  const map=new Map();
+  for(const r of S.rows){
+    if(r.contrato!==contract)continue;
+    if(store&&r.estabelecimento!==store)continue;
+    if(r.rubrica!==RUB.gross&&r.rubrica!==RUB.net&&r.rubrica!==RUB.salary)continue;
+    let o=map.get(r.competencia);
+    if(!o){o={gross:0,net:0,salary:0};map.set(r.competencia,o);}
+    if(r.rubrica===RUB.gross)o.gross+=r.valor;else if(r.rubrica===RUB.net)o.net+=r.valor;else o.salary+=r.valor;
+  }
+  return map;
+}
+function renderLeavePerson(){
+  const contract=S.leaveContract,store=S.leaveContractStore||null;
+  const hist=leavePersonHistory(contract,store);
+  if(!hist.length){S.leaveContract=null;S.leaveContractStore=null;return renderLeaves();}
+  const pay=leavePersonPay(contract,store),last=hist.at(-1);
+  const comps=[...new Set(hist.map(x=>x.competencia))].sort();
+  const days=hist.reduce((s,x)=>s+x.days,0),value=hist.reduce((s,x)=>s+x.value,0);
+  const lastComp=comps.at(-1),openNow=lastComp===S.competencias.at(-1);
+  const activeTypes=hist.filter(x=>x.competencia===lastComp).map(x=>x.type);
+  const suspended=openNow&&activeTypes.some(t=>t.suspends);
+  let streak=0;
+  for(let i=S.competencias.length-1;i>=0;i--){if(comps.includes(S.competencias[i]))streak++;else break;}
+  const inPeriod=hist.filter(x=>x.competencia>=S.ini&&x.competencia<=S.fim);
+  const byComp=comps.map(c=>{const rows=hist.filter(x=>x.competencia===c);
+    return {competencia:c,label:compLabel(c),days:rows.reduce((s,x)=>s+x.days,0),value:rows.reduce((s,x)=>s+x.value,0),types:rows.map(x=>x.type),pay:pay.get(c)||null};});
+  const gaps=[];
+  for(let i=1;i<comps.length;i++){const a=S.competencias.indexOf(comps[i-1]),b=S.competencias.indexOf(comps[i]);if(b-a>1)gaps.push(`${compLabel(comps[i-1])} → ${compLabel(comps[i])}`);}
+  const situation=suspended?'Contrato suspenso':openNow?'Afastado na última competência':'Sem afastamento na última competência';
+  const situationTone=suspended?'bad':openNow?'warn':'good';
+  return `<div class="toolbar"><div class="qbtns"><button class="qbtn" id="leaveBack">‹ Voltar para Afastamentos</button></div>
+  <div class="tg"><label>Loja</label><div style="font-size:12px;font-weight:700;padding-top:4px">${esc(codeOf(last.store)+' · '+nameOf(last.store))}</div></div>
+  <div class="tg"><label>Departamento</label><div style="font-size:12px;font-weight:700;padding-top:4px">${esc(nameOf(last.department))}</div></div>
+  <div class="tg"><label>Matrícula</label><div style="font-size:12px;font-weight:700;padding-top:4px">${esc(codeOf(contract))}</div></div></div>
+<div class="section"><div class="shead"><h2>${esc(nameOf(contract))}</h2><span class="legend"><span class="status-chip ${situationTone==='bad'?'red':situationTone==='warn'?'yellow':'green'}">${situation}</span></span></div>
+<div class="cards">${card('Dias parados no histórico',fN(days,0),`${fN(comps.length)} competência(s) com afastamento`,byComp.map(x=>x.days),'#c2410c')}${card('Sequência atual',streak?fN(streak)+(streak===1?' mês':' meses'):'—',streak?`Afastamento contínuo até ${compLabel(lastComp)}`:'Sem afastamento na competência mais recente',[streak],'#b91c1c')}${card('Valor em folha',fM(value),'Somatório de todo o histórico disponível',byComp.map(x=>x.value),'#1d4ed8')}${card('Dentro do período filtrado',fN(inPeriod.reduce((s,x)=>s+x.days,0),0)+' dias',`${compLabel(S.ini)} a ${compLabel(S.fim)}`,inPeriod.map(x=>x.days),'#15803d')}</div></div>
+<div class="section"><div class="shead"><h2>Histórico completo de afastamentos</h2><span class="legend">Todas as competências carregadas, independente do filtro de período</span></div><div class="twrap"><table><thead><tr><th>Competência</th><th>Motivo</th><th>Quem paga</th><th>Efeito no contrato</th><th>Dias</th><th>Valor da rubrica</th><th>Vencimentos no mês</th><th>Salário base</th><th>No período filtrado</th></tr></thead><tbody>${hist.map(x=>{const p=pay.get(x.competencia);const inside=x.competencia>=S.ini&&x.competencia<=S.fim;return `<tr><th>${compLabel(x.competencia)}</th><td class="left"><span class="status-chip ${x.type.tone}">${esc(x.type.label)}</span></td><td class="left small">${esc(x.type.payer)}</td><td class="left small">${x.type.suspends?'Suspende o contrato':'Mantém ativo'}</td><td>${fN(x.days,0)}</td><td>${fM(x.value)}</td><td>${p?fM(p.gross):'—'}</td><td>${p&&p.salary?fM(p.salary):'—'}</td><td class="center"><span class="badge ${inside?'good':''}">${inside?'Sim':'Fora'}</span></td></tr>`;}).join('')}</tbody></table></div></div>
+<div class="p2grid"><div class="section"><div class="shead"><h2>Dias parados por competência</h2><span class="legend">Histórico completo</span></div>${horizontalBars(byComp,'days','label',v=>fN(v,0)+' dias')}</div><div class="section"><div class="shead"><h2>Resumo por competência</h2><span class="legend">Motivos acumulados no mês</span></div><div class="twrap"><table><thead><tr><th>Competência</th><th>Motivos</th><th>Dias</th><th>Valor</th></tr></thead><tbody>${byComp.map(x=>`<tr><th>${x.label}</th><td class="left">${x.types.map(t=>`<span class="status-chip ${t.tone}">${esc(t.label)}</span>`).join(' ')}</td><td>${fN(x.days,0)}</td><td>${fM(x.value)}</td></tr>`).join('')}</tbody></table></div></div></div>
+${gaps.length?`<div class="callout"><strong>Afastamentos intercalados:</strong> houve retorno e novo afastamento entre ${esc(gaps.join('; '))}. Recorrência intercalada costuma indicar condição não resolvida e merece acompanhamento do RH.</div>`:''}
+${streak>=6?`<div class="callout" style="background:#fef2f2;border-color:#fecaca"><strong>Afastamento prolongado:</strong> ${fN(streak)} meses contínuos até ${compLabel(lastComp)}. Contratos suspensos por período longo exigem controle de perícia, manutenção de benefícios e avaliação de retorno ou reabilitação.</div>`:''}`;
+}
 function renderLeaves(){
+  if(S.leaveContract)return renderLeavePerson();
   const motive=S.leaveMotive,period=leaveRegister({motive}),current=leaveRegister({ini:S.fim,fim:S.fim,motive});
   if(!period.length)return leaveToolbar()+`<div class="callout"><strong>Nenhum afastamento no recorte selecionado.</strong> Amplie o período ou troque o filtro de motivo.</div>`;
   const keys=leaveHistoryKeys(),transition=leaveTransitionSet(S.fim);
@@ -766,6 +832,15 @@ function renderLeaves(){
   const depMap=new Map();
   for(const x of period){const k=x.store+'|||'+x.department;let o=depMap.get(k);if(!o){o={store:x.store,department:x.department,label:codeOf(x.store)+' · '+nameOf(x.department),days:0,value:0,people:new Set()};depMap.set(k,o);}o.days+=x.days;o.value+=x.value;o.people.add(x.contract);}
   const deps=[...depMap.values()].sort((a,b)=>b.days-a.days);
+  const perMap=new Map();
+  for(const x of period){const k=x.store+'|||'+x.contract;let o=perMap.get(k);
+    if(!o){o={store:x.store,department:x.department,contract:x.contract,days:0,value:0,comps:new Set(),motives:new Map()};perMap.set(k,o);}
+    o.days+=x.days;o.value+=x.value;o.comps.add(x.competencia);if(x.department)o.department=x.department;
+    o.motives.set(x.type.key,(o.motives.get(x.type.key)||0)+x.days);}
+  const people=[...perMap.values()].map(o=>{const last=[...o.comps].sort().at(-1);
+    const list=[...o.motives.entries()].sort((a,b)=>b[1]-a[1]).map(([k])=>leaveTypeByKey(k)).filter(Boolean);
+    return {...o,last,months:o.comps.size,motiveList:list,openNow:last===S.fim,suspended:last===S.fim&&list.some(t=>t.suspends)};})
+    .sort((a,b)=>b.days-a.days);
   const first=series[0],last=series.at(-1),trend=first&&first.days?((last.days/first.days)-1)*100:NaN;
   const longCases=active.filter(x=>x.streak>=6).length,accidents=active.filter(x=>x.type.key==='acidente').length;
   let answer=`No período há <strong>${fN(daysTotal,0)}</strong> dias parados envolvendo <strong>${fN(new Set(period.map(x=>x.contract)).size)}</strong> pessoas, com <strong>${fM(valueTotal)}</strong> registrados em folha. `;
@@ -773,18 +848,19 @@ function renderLeaves(){
   if(longCases)answer+=`<strong>${fN(longCases)}</strong> caso(s) já acumulam seis meses ou mais de afastamento contínuo. `;
   if(accidents)answer+=`Há <strong>${fN(accidents)}</strong> afastamento(s) por acidente ou doença do trabalho, que alimentam o cálculo do FAP e portanto o custo de RAT de toda a rede. `;
   answer+=`Dias são convertidos das horas registradas na folha à razão de 220 horas por mês.`;
-  return leaveToolbar()+`<div class="callout"><strong>Como este módulo lê a folha:</strong> cada motivo vem de uma rubrica de dias específica (${LEAVE_TYPES.map(t=>esc(t.label)).join(', ')}). Contratos com afastamento pelo INSS ficam suspensos: continuam na folha, mas sem salário da empresa. Por isso o quadro efetivo abaixo desconta esses contratos do total de funcionários.</div>
+  return leaveToolbar()+`<div class="callout"><strong>Como este módulo lê a folha:</strong> cada motivo vem de uma rubrica de dias específica (${LEAVE_TYPES.map(t=>esc(t.label)).join(', ')}). Contratos com afastamento pelo INSS ficam suspensos: continuam na folha, mas sem salário da empresa. Por isso o quadro efetivo abaixo desconta esses contratos do total de funcionários. O acidente de trabalho é lançado na folha em duas rubricas com os mesmos dias, então o módulo considera apenas a maior variante para não contar em dobro.</div>
 <div class="callout" style="background:#fff;border-color:var(--line)">${answer}</div>
 <div class="cards">${card('Pessoas afastadas',fN(peopleCurrent),`Competência ${compLabel(S.fim)} · ${fN(suspTotal)} com contrato suspenso`,series.map(x=>x.people),'#b91c1c')}${card('Dias parados no período',fN(daysTotal,0),Number.isFinite(trend)?`${fP(trend)} de ${first.label} para ${last.label}`:'Sem base de comparação',series.map(x=>x.days),'#c2410c')}${card('Custo direto da empresa',fM(employerCost),'Salário-doença e licença-paternidade, sem repasse ao INSS',series.map(x=>x.value),'#1d4ed8')}${card('Quadro efetivo',fN(headTotal-suspTotal),`${fN(headTotal)} contratos na folha menos ${fN(suspTotal)} suspensos`,[headTotal-suspTotal,headTotal],'#15803d')}</div>
 <div class="p2grid"><div class="section"><div class="shead"><h2>Dias parados por competência</h2><span class="legend">Todos os motivos do recorte</span></div>${lineChart(series.map(x=>({label:x.label,value:x.days})),null,'Dias parados','',false)}</div><div class="section"><div class="shead"><h2>Pessoas afastadas por competência</h2><span class="legend">Contratos distintos</span></div>${lineChart(series.map(x=>({label:x.label,value:x.people})),null,'Pessoas','',false)}</div></div>
-<div class="section"><div class="shead"><h2>Casos ativos em ${compLabel(S.fim)}</h2><span class="legend">Afastamentos que suspendem o contrato · clique para abrir o detalhamento</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>Departamento</th><th>Funcionário</th><th>Motivo</th><th>Quem paga</th><th>Dias no mês</th><th>Valor</th><th>Meses seguidos</th></tr></thead><tbody>${active.length?active.map(x=>`<tr class="drill-row" data-leave-contract="${esc(x.contract)}" data-leave-store="${esc(x.store)}" data-leave-department="${esc(x.department)}"><th>${esc(codeOf(x.store))}</th><td class="left">${esc(nameOf(x.department))}</td><td class="left cv">${esc(nameOf(x.contract))}<span class="drill-arrow">›</span></td><td class="left"><span class="status-chip ${x.type.tone}">${esc(x.type.label)}</span></td><td class="left small">${esc(x.type.payer)}</td><td>${fN(x.days,0)}</td><td>${fM(x.value)}</td><td class="${x.streak>=6?'bad':x.streak>=3?'warn':''}">${fN(x.streak)}</td></tr>`).join(''):`<tr><td class="left" colspan="8">Nenhum contrato suspenso nesta competência.</td></tr>`}</tbody></table></div></div>
+<div class="section"><div class="shead"><h2>Casos ativos em ${compLabel(S.fim)}</h2><span class="legend">Afastamentos que suspendem o contrato · clique para abrir o histórico da pessoa</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>Departamento</th><th>Funcionário</th><th>Motivo</th><th>Quem paga</th><th>Dias no mês</th><th>Valor</th><th>Meses seguidos</th></tr></thead><tbody>${active.length?active.map(x=>`<tr class="drill-row" data-leave-contract="${esc(x.contract)}" data-leave-store="${esc(x.store)}" data-leave-department="${esc(x.department)}"><th>${esc(codeOf(x.store))}</th><td class="left">${esc(nameOf(x.department))}</td><td class="left cv">${esc(nameOf(x.contract))}<span class="drill-arrow">›</span></td><td class="left"><span class="status-chip ${x.type.tone}">${esc(x.type.label)}</span></td><td class="left small">${esc(x.type.payer)}</td><td>${fN(x.days,0)}</td><td>${fM(x.value)}</td><td class="${x.streak>=6?'bad':x.streak>=3?'warn':''}">${fN(x.streak)}</td></tr>`).join(''):`<tr><td class="left" colspan="8">Nenhum contrato suspenso nesta competência.</td></tr>`}</tbody></table></div></div>
+<div class="section"><div class="shead"><h2>Pessoas afastadas no período</h2><span class="legend">${fN(people.length)} pessoa(s) em ${compLabel(S.ini)} a ${compLabel(S.fim)} · clique no nome para abrir o histórico de afastamentos da pessoa</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>Departamento</th><th>Funcionário</th><th>Motivos</th><th>Situação</th><th>Meses com afastamento</th><th>Dias</th><th>Dias por mês</th><th>Valor em folha</th><th>Último mês</th></tr></thead><tbody>${people.map(x=>`<tr class="drill-row" data-leave-contract="${esc(x.contract)}" data-leave-store="${esc(x.store)}" data-leave-department="${esc(x.department)}"><th>${esc(codeOf(x.store))}</th><td class="left">${esc(nameOf(x.department))}</td><td class="left cv">${esc(nameOf(x.contract))}<span class="drill-arrow">›</span></td><td class="left">${x.motiveList.map(t=>`<span class="status-chip ${t.tone}">${esc(t.label)}</span>`).join(" ")}</td><td class="center"><span class="badge ${x.suspended?"bad":x.openNow?"warn":"good"}">${x.suspended?"Contrato suspenso":x.openNow?"Afastado no mês":"Encerrado"}</span></td><td class="${x.months>=6?"bad":x.months>=3?"warn":""}">${fN(x.months)}</td><td>${fN(x.days,0)}</td><td>${fN(x.months?x.days/x.months:0,1)}</td><td>${fM(x.value)}</td><td>${compLabel(x.last)}</td></tr>`).join("")}</tbody></table></div></div>
 <div class="section"><div class="shead"><h2>Composição por motivo</h2><span class="legend">${compLabel(S.ini)} a ${compLabel(S.fim)}</span></div><div class="twrap"><table><thead><tr><th>Motivo</th><th>Quem paga</th><th>Efeito no contrato</th><th>Pessoas</th><th>Dias</th><th>% dos dias</th><th>Valor em folha</th></tr></thead><tbody>${byType.map(x=>`<tr><th class="left"><span class="status-chip ${x.type.tone}">${esc(x.type.label)}</span></th><td class="left small">${esc(x.type.payer)}</td><td class="left small">${x.type.suspends?'Suspende o contrato':'Mantém o contrato ativo'}</td><td>${fN(x.people)}</td><td>${fN(x.days,0)}</td><td>${fP(daysTotal?x.days/daysTotal*100:0,1,false)}</td><td>${fM(x.value)}</td></tr>`).join('')}</tbody></table></div></div>
 <div class="p2grid"><div class="section"><div class="shead"><h2>Concentração por departamento</h2><span class="legend">Dias parados no período</span></div>${horizontalBars(deps.slice(0,12),'days','label',v=>fN(v,0)+' dias')}</div><div class="section"><div class="shead"><h2>Quadro efetivo por loja</h2><span class="legend">Competência ${compLabel(S.fim)}</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>Contratos na folha</th><th>Suspensos</th><th>Quadro efetivo</th><th>% suspenso</th></tr></thead><tbody>${heads.map(x=>`<tr><th class="left">${esc(codeOf(x.store)+' · '+nameOf(x.store))}</th><td>${fN(x.headcount)}</td><td class="${x.suspended?'warn':''}">${fN(x.suspended)}</td><td class="cv">${fN(x.effective)}</td><td class="${x.share>=4?'bad':''}">${fP(x.share,1,false)}</td></tr>`).join('')}</tbody></table></div></div></div>
-<div class="section"><div class="shead"><h2>Departamentos com maior tempo parado</h2><span class="legend">Clique para abrir o detalhamento do departamento</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>Departamento</th><th>Pessoas</th><th>Dias</th><th>Dias por pessoa</th><th>Valor em folha</th></tr></thead><tbody>${deps.slice(0,20).map(x=>`<tr class="drill-row" data-leave-department="${esc(x.department)}" data-leave-store="${esc(x.store)}"><th>${esc(codeOf(x.store))}</th><td class="left cv">${esc(nameOf(x.department))}<span class="drill-arrow">›</span></td><td>${fN(x.people.size)}</td><td>${fN(x.days,0)}</td><td>${fN(x.people.size?x.days/x.people.size:0,1)}</td><td>${fM(x.value)}</td></tr>`).join('')}</tbody></table></div></div>
+<div class="section"><div class="shead"><h2>Departamentos com maior tempo parado</h2><span class="legend">Clique para filtrar este módulo pelo departamento</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>Departamento</th><th>Pessoas</th><th>Dias</th><th>Dias por pessoa</th><th>Valor em folha</th></tr></thead><tbody>${deps.slice(0,20).map(x=>`<tr class="drill-row" data-leave-focus-department="${esc(x.department)}" data-leave-focus-store="${esc(x.store)}"><th>${esc(codeOf(x.store))}</th><td class="left cv">${esc(nameOf(x.department))}<span class="drill-arrow">›</span></td><td>${fN(x.people.size)}</td><td>${fN(x.days,0)}</td><td>${fN(x.people.size?x.days/x.people.size:0,1)}</td><td>${fM(x.value)}</td></tr>`).join('')}</tbody></table></div></div>
 ${transition.size?`<div class="callout"><strong>Em transição para o INSS:</strong> ${fN(transition.size)} contrato(s) registram a rubrica de salário-doença com afastamento em ${compLabel(S.fim)}, o que normalmente antecede a concessão do benefício e a suspensão do contrato no mês seguinte.</div>`:''}`;
 }
 function render(){if(!S.competencias.length){document.getElementById('main').innerHTML=`<div class="errmsg"><strong>Não foi possível ler as planilhas.</strong><br>Verifique se os arquivos permanecem públicos, se os nomes não foram alterados e se a biblioteca XLSX foi carregada.</div>`;return;}document.querySelectorAll('#moduleButtons .btn').forEach(b=>b.classList.toggle('active',b.dataset.module===S.module));let html='';if(S.module==='home')html=renderHome();else if(S.module==='stores')html=renderStores();else if(S.module==='departments')html=renderDepartments();else if(S.module==='evolution')html=renderEvolution();else if(S.module==='comparison')html=renderComparison();else if(S.module==='diagnosis')html=renderDiagnosis();else if(S.module==='leaders')html=renderLeaders();else if(S.module==='dobras')html=renderDobras();else if(S.module==='leaves')html=renderLeaves();else if(S.module==='drill')html=renderDrill();else if(S.module==='audit')html=renderAudit();else html=renderSettings();document.getElementById('main').innerHTML=html;bindToolbar();bindComparisonToolbar();bindDiagnosis();bindLeaders();bindDobras();bindLeaves();bindDrill();bindDrillEntries();bindSettings();}
-document.getElementById('moduleButtons').addEventListener('click',e=>{const b=e.target.closest('[data-module]');if(!b)return;S.module=b.dataset.module;render();});
+document.getElementById('moduleButtons').addEventListener('click',e=>{const b=e.target.closest('[data-module]');if(!b)return;S.module=b.dataset.module;if(S.module!=='leaves'){S.leaveContract=null;S.leaveContractStore=null;}render();});
 const ACCESS_HASH='eb8b1b001fa9453a76305723df444230e18a31e19a09ebfe6e5612006bbec12b';
 const ACCESS_SESSION_KEY='dnaFolha.access.v1';
 let dashboardStarted=false;
