@@ -72,6 +72,11 @@ tr.total th,tr.total td{background:#f0f5ff;font-weight:800}.rank{display:inline-
 @media(max-width:760px){.p2grid,.compare-toolbar,.compare-summary{grid-template-columns:1fr}.summary-grid{grid-template-columns:repeat(2,1fr)}.bar-row{grid-template-columns:1fr}.bar-value{text-align:left}.header,.controls,.main{padding-left:10px;padding-right:10px}}
 @media(max-width:520px){.cards,.analysis,.form-grid,.summary-grid{grid-template-columns:1fr}.tg select,.tg input{min-width:130px}.kval{font-size:18px}}
 
+/* Faturamento e produtividade */
+.rev-input{width:118px;padding:6px;border:1px solid var(--line);border-radius:7px;text-align:right;background:#fff;font-size:12px}
+.rev-input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px rgba(29,78,216,.10)}
+#revEditor code{background:#f1f5f9;border-radius:5px;padding:1px 5px;font-size:11px}
+
 /* Barreira visual de acesso (client-side) */
 body.locked{overflow:hidden;background:#eef2f7}
 body.locked>.wrap{display:none}
@@ -142,6 +147,7 @@ body.locked>.wrap{display:none}
     <button class="btn active" data-module="home">Visão Executiva</button>
     <button class="btn" data-module="stores">Lojas</button>
     <button class="btn" data-module="departments">Departamentos</button>
+    <button class="btn" data-module="revenue">Faturamento</button>
     <button class="btn" data-module="evolution">Evolução</button>
     <button class="btn" data-module="comparison">Comparação</button>
     <button class="btn" data-module="diagnosis">Diagnóstico</button>
@@ -266,7 +272,8 @@ function injetarBotaoAtualizar(){
   alvo.parentNode.insertBefore(b,alvo.nextSibling);
 }
 const DEFAULT_PARAM={inss:20,rat:2,fap:1,terceiros:5.8,fgts:8,prov13:8.3333,provFerias:8.3333,provTerco:2.7778};
-const S={module:'home',rows:[],loaded:[],errors:[],dobras:[],dobraLoaded:[],dobraErrors:[],dobraCompetencias:[],employeeIndex:null,cache:{},competencias:[],stores:[],departments:[],ini:null,fim:null,store:'all',department:'all',compAIni:null,compAFim:null,compBIni:null,compBFim:null,compStore:'all',compDepartment:'all',diagAIni:null,diagAFim:null,diagBIni:null,diagBFim:null,diagStore:'all',diagDepartment:'all',leaderAIni:null,leaderAFim:null,leaderBIni:null,leaderBFim:null,leaderStore:'all',leaderDepartment:'all',leaderStatus:'all',dobraIni:null,dobraFim:null,dobraStore:'all',dobraDepartment:'all',dobraStatus:'all',dobraEmployeeSearch:'',leaveMotive:'all',leaveContract:null,leaveContractStore:null,drillStore:null,drillDepartment:null,drillContract:null,drillSearch:'',params:{},leaders:{},storeLeaders:{},globalParam:{...DEFAULT_PARAM}};
+const DEFAULT_REVENUE_CFG={aloc:'none',meta:0};
+const S={module:'home',rows:[],loaded:[],errors:[],dobras:[],dobraLoaded:[],dobraErrors:[],dobraCompetencias:[],employeeIndex:null,cache:{},competencias:[],stores:[],departments:[],ini:null,fim:null,store:'all',department:'all',compAIni:null,compAFim:null,compBIni:null,compBFim:null,compStore:'all',compDepartment:'all',diagAIni:null,diagAFim:null,diagBIni:null,diagBFim:null,diagStore:'all',diagDepartment:'all',leaderAIni:null,leaderAFim:null,leaderBIni:null,leaderBFim:null,leaderStore:'all',leaderDepartment:'all',leaderStatus:'all',dobraIni:null,dobraFim:null,dobraStore:'all',dobraDepartment:'all',dobraStatus:'all',dobraEmployeeSearch:'',leaveMotive:'all',leaveContract:null,leaveContractStore:null,drillStore:null,drillDepartment:null,drillContract:null,drillSearch:'',params:{},leaders:{},storeLeaders:{},globalParam:{...DEFAULT_PARAM},revenue:{},revenueRepo:null,revenueCfg:{...DEFAULT_REVENUE_CFG},revenueEditor:false,revenueMsg:''};
 const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 const RUB={
   gross:'Total dos Vencimentos',discounts:'Total dos Descontos',net:'Líquido da Folha',salary:'Salário Mês (SMES)',
@@ -322,8 +329,8 @@ function parsePayrollSheet(ws,file,sheetName){const matrix=XLSX.utils.sheet_to_j
   }
   const contracts=contractCpf.size,contractsWithCpf=[...contractCpf.values()].filter(Boolean).length,uniqueCpf=new Set(rows.filter(r=>validCpfShape(r.cpf)).map(r=>r.cpf)).size;return {rows,meta:{sheetName,headerRow:headerRow+1,headers:{cpf:cpfChoice?.header||'',contrato:text(headers[idx.contrato]),funcionario:idx.funcionario>=0?text(headers[idx.funcionario]):'',estabelecimento:idx.estabelecimento>=0?text(headers[idx.estabelecimento]):'',setor:idx.setor>=0?text(headers[idx.setor]):'',rubrica:text(headers[idx.rubrica]),valor:text(headers[idx.valor])},cpfStats:{contracts,contractsWithCpf,uniqueCpf,validRows:rows.filter(r=>validCpfShape(r.cpf)).length,sourceValid:cpfChoice?.valid||0,sourceNonEmpty:cpfChoice?.nonEmpty||0,sourceRatio:cpfChoice?.ratio||0},score:rows.length+contractsWithCpf*25}};}
 
-function loadLocal(){try{S.params=JSON.parse(localStorage.getItem('folha.params')||'{}');S.leaders=JSON.parse(localStorage.getItem('folha.leaders')||'{}');S.storeLeaders=JSON.parse(localStorage.getItem('folha.storeLeaders')||'{}');S.globalParam={...DEFAULT_PARAM,...JSON.parse(localStorage.getItem('folha.globalParam')||'{}')};}catch(e){S.params={};S.leaders={};S.storeLeaders={};}}
-function saveLocal(){localStorage.setItem('folha.params',JSON.stringify(S.params));localStorage.setItem('folha.leaders',JSON.stringify(S.leaders));localStorage.setItem('folha.storeLeaders',JSON.stringify(S.storeLeaders));localStorage.setItem('folha.globalParam',JSON.stringify(S.globalParam));}
+function loadLocal(){try{S.params=JSON.parse(localStorage.getItem('folha.params')||'{}');S.leaders=JSON.parse(localStorage.getItem('folha.leaders')||'{}');S.storeLeaders=JSON.parse(localStorage.getItem('folha.storeLeaders')||'{}');S.globalParam={...DEFAULT_PARAM,...JSON.parse(localStorage.getItem('folha.globalParam')||'{}')};S.revenue=JSON.parse(localStorage.getItem('folha.revenue')||'{}');S.revenueCfg={...DEFAULT_REVENUE_CFG,...JSON.parse(localStorage.getItem('folha.revenueCfg')||'{}')};}catch(e){S.params={};S.leaders={};S.storeLeaders={};S.revenue={};S.revenueCfg={...DEFAULT_REVENUE_CFG};}}
+function saveLocal(){localStorage.setItem('folha.params',JSON.stringify(S.params));localStorage.setItem('folha.leaders',JSON.stringify(S.leaders));localStorage.setItem('folha.storeLeaders',JSON.stringify(S.storeLeaders));localStorage.setItem('folha.globalParam',JSON.stringify(S.globalParam));localStorage.setItem('folha.revenue',JSON.stringify(S.revenue||{}));localStorage.setItem('folha.revenueCfg',JSON.stringify(S.revenueCfg||DEFAULT_REVENUE_CFG));}
 function paramFor(est){const c=codeOf(est);return {...S.globalParam,...(S.params[c]||{})};}
 function leaderKey(est,dep){return text(est)+'|||'+text(dep);}
 function leaderFor(est,dep){return S.storeLeaders[leaderKey(est,dep)]||S.leaders[dep]||'Não cadastrado';}
@@ -359,6 +366,7 @@ function enrichDobras(){const index=buildEmployeeIndex();S.dobras=S.dobras.map(d
 
 async function loadAll(){
   loadLocal();injetarBotaoAtualizar();
+  await carregarFaturamentoRepo();
   const lbl0=document.getElementById('progressText');if(lbl0)lbl0.textContent='Descobrindo arquivos disponíveis no GitHub…';
   await descobrirARQ(false);
   S.rows=[];S.loaded=[];S.errors=[];S.dobras=[];S.dobraLoaded=[];S.dobraErrors=[];const progress=document.getElementById('progressBar'),label=document.getElementById('progressText'),totalFiles=FILES.length+DOBRA_FILES.length;let step=0;
@@ -665,7 +673,7 @@ function auditData(){const issues=[];for(const f of FILES){const ok=S.loaded.fin
   const blankStore=S.rows.filter(r=>!r.estabelecimento).length,blankSector=S.rows.filter(r=>!r.setor).length,blankContract=S.rows.filter(r=>!r.contrato).length,blankRub=S.rows.filter(r=>!r.rubrica).length,contractCpf=new Map();for(const r of S.rows.filter(x=>x.contrato)){const k=r.competencia+'|'+r.estabelecimento+'|'+r.contrato;contractCpf.set(k,(contractCpf.get(k)||false)||validCpfShape(r.cpf));}const blankCpf=[...contractCpf.values()].filter(v=>!v).length;
   if(blankStore)issues.push({level:'err',item:'Estabelecimento vazio',detail:`${fN(blankStore)} linhas sem estabelecimento.`});if(blankSector)issues.push({level:'warn',item:'Setor vazio',detail:`${fN(blankSector)} linhas sem setor.`});if(blankContract)issues.push({level:'err',item:'Contrato vazio',detail:`${fN(blankContract)} linhas sem contrato.`});if(blankRub)issues.push({level:'warn',item:'Rubrica vazia',detail:`${fN(blankRub)} linhas sem rubrica.`});if(blankCpf)issues.push({level:'warn',item:'CPF ausente ou não reconhecido',detail:`${fN(blankCpf)} contratos/competências não possuem CPF válido para cruzar as dobras.`});
   const pending=S.dobras.filter(d=>d.status!=='matched'),awaiting=pending.filter(d=>d.status==='awaiting'),missing=pending.filter(d=>d.status==='missing'),other=pending.filter(d=>d.status==='other_month'),nameMismatch=pending.filter(d=>d.status==='name_mismatch'),ambiguous=pending.filter(d=>d.status==='ambiguous'),invalid=pending.filter(d=>d.status==='invalid');if(awaiting.length)issues.push({level:'warn',item:'Dobras aguardando folha',detail:`${fN(awaiting.length)} lançamentos pertencem a competências sem folha carregada.`});if(other.length)issues.push({level:'warn',item:'CPF localizado em outro mês',detail:`${fN(other.length)} lançamentos têm CPF existente na folha, mas não na mesma competência da dobra.`});if(nameMismatch.length)issues.push({level:'warn',item:'Nome localizado com CPF diferente',detail:`${fN(nameMismatch.length)} lançamentos encontraram o mesmo nome na competência, porém o CPF não coincide. Verifique a coluna escolhida e a origem do arquivo.`});if(missing.length)issues.push({level:'err',item:'CPF de dobra não localizado',detail:`${fN(missing.length)} lançamentos não encontraram CPF nem nome correspondente na folha da mesma competência.`});if(ambiguous.length)issues.push({level:'warn',item:'Vínculo ambíguo nas dobras',detail:`${fN(ambiguous.length)} lançamentos têm mais de uma loja/departamento para o CPF no mês.`});if(invalid.length)issues.push({level:'err',item:'CPF inválido nas dobras',detail:`${fN(invalid.length)} lançamentos possuem CPF fora do formato de 11 dígitos.`});
-  const dups=new Map();for(const d of S.dobras){const k=[d.competencia,d.cpf,d.valor].join('|');dups.set(k,(dups.get(k)||0)+1);}const duplicatedDobras=[...dups.values()].filter(v=>v>1).length;if(duplicatedDobras)issues.push({level:'warn',item:'Possíveis dobras duplicadas',detail:`${fN(duplicatedDobras)} combinações de competência, CPF e valor aparecem mais de uma vez.`});if(!issues.length)issues.push({level:'ok',item:'Validação concluída',detail:'Nenhuma inconsistência estrutural detectada.'});return issues;}
+  const dups=new Map();for(const d of S.dobras){const k=[d.competencia,d.cpf,d.valor].join('|');dups.set(k,(dups.get(k)||0)+1);}const duplicatedDobras=[...dups.values()].filter(v=>v>1).length;if(duplicatedDobras)issues.push({level:'warn',item:'Possíveis dobras duplicadas',detail:`${fN(duplicatedDobras)} combinações de competência, CPF e valor aparecem mais de uma vez.`});const revComps=S.competencias.filter(c=>c>=S.ini&&c<=S.fim);const revPairs=new Map();for(const r of S.rows){if(!r.estabelecimento||r.competencia<S.ini||r.competencia>S.fim)continue;revPairs.set(r.competencia+'|||'+codeOf(r.estabelecimento),{comp:r.competencia,store:codeOf(r.estabelecimento)});}const revMissing=[...revPairs.values()].filter(x=>revGet(x.comp,x.store,'*')===null);if(revPairs.size&&revMissing.length===revPairs.size)issues.push({level:'warn',item:'Faturamento não cadastrado',detail:`Nenhuma das ${fN(revPairs.size)} combinações de loja e competência do período possui faturamento informado. O módulo Faturamento fica sem base de cálculo.`});else if(revMissing.length)issues.push({level:'warn',item:'Faturamento incompleto',detail:`${fN(revMissing.length)} de ${fN(revPairs.size)} combinações de loja e competência do período estão sem faturamento informado (${[...new Set(revMissing.map(x=>compLabel(x.comp)+' · '+x.store))].slice(0,8).join(', ')}${revMissing.length>8?'…':''}).`});if(revCfg().aloc!=='none')issues.push({level:'warn',item:'Faturamento rateado por estimativa',detail:'Departamentos sem faturamento próprio estão recebendo rateio '+(revCfg().aloc==='head'?'pelo quadro':'pelo custo econômico')+'. Os valores rateados aparecem marcados como estimados e não devem ser tratados como venda apurada do departamento.'});if(!issues.length)issues.push({level:'ok',item:'Validação concluída',detail:'Nenhuma inconsistência estrutural detectada.'});return issues;}
 function renderAudit(){const issues=auditData(),matched=S.dobras.filter(d=>d.status==='matched').length,pending=S.dobras.length-matched,cpfContracts=S.loaded.reduce((a,x)=>a+(x.cpfStats?.contractsWithCpf||0),0),allContracts=S.loaded.reduce((a,x)=>a+(x.cpfStats?.contracts||0),0);return toolbar()+`<div class="cards">${card('Folhas carregadas',`${S.loaded.length}/${FILES.length}`,S.errors.length?`${S.errors.length} arquivo(s) com erro`:'Todas as folhas previstas foram lidas',[S.loaded.length],'#15803d')}${card('Cobertura de CPF',allContracts?fP(cpfContracts/allContracts*100,1,false):'0,0%',`${fN(cpfContracts)} de ${fN(allContracts)} contratos/competências`,[cpfContracts,allContracts],'#1d4ed8')}${card('Dobras carregadas',`${S.dobraLoaded.length}/${DOBRA_FILES.length}`,`${fN(S.dobras.length)} lançamentos · ${fN(matched)} cruzados`,[S.dobraLoaded.length],'#c2410c')}${card('Pendências de dobras',fN(pending),'CPF, competência ou vínculo sem atribuição contratual',[pending],'#b91c1c')}</div><div class="section"><div class="shead"><h2>Validações e pendências</h2><span class="legend">Estrutura, cadastro e qualidade</span></div><div class="twrap"><table><thead><tr><th>Status</th><th>Validação</th><th>Detalhe</th></tr></thead><tbody>${issues.map(x=>`<tr><th><span class="badge ${x.level==='err'?'bad':x.level==='warn'?'warn':'good'}">${x.level==='err'?'Erro':x.level==='warn'?'Atenção':'OK'}</span></th><td class="left cv">${esc(x.item)}</td><td class="left">${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div></div><div class="section"><div class="shead"><h2>Arquivos da folha</h2><span class="legend">Detecção automática da aba, cabeçalho e coluna de CPF por conteúdo</span></div><div class="twrap"><table><thead><tr><th>Competência</th><th>Arquivo</th><th>Linhas</th><th>Aba</th><th>Cabeçalho</th><th>Coluna CPF escolhida</th><th>Contratos com CPF</th><th>CPFs únicos</th><th>Status</th></tr></thead><tbody>${FILES.map(f=>{const x=S.loaded.find(a=>a.path===f.path),e=S.errors.find(a=>a.path===f.path),coverage=x?.cpfStats?.contracts?x.cpfStats.contractsWithCpf/x.cpfStats.contracts*100:0;return `<tr><th>${compLabel(f.competencia)}</th><td class="left">${esc(f.path)}</td><td>${x?fN(x.rows):'—'}</td><td class="left">${x?esc(x.sheetName||'—'):'—'}</td><td>${x?`linha ${fN(x.headerRow)}`:'—'}</td><td class="left small">${x?esc(x.headers?.cpf||'Não identificada'):'—'}</td><td>${x?`${fN(x.cpfStats?.contractsWithCpf||0)}/${fN(x.cpfStats?.contracts||0)} · ${fP(coverage,1,false)}`:'—'}</td><td>${x?fN(x.cpfStats?.uniqueCpf||0):'—'}</td><td class="center"><span class="badge ${x&&x.cpfStats?.contractsWithCpf?'good':'bad'}">${x?(x.cpfStats?.contractsWithCpf?'Carregado com CPF':'Carregado sem CPF'):'Erro '+esc(e?.error||'')}</span></td></tr>`;}).join('')}</tbody></table></div></div><div class="section"><div class="shead"><h2>Arquivos de dobras</h2><span class="legend">Cabeçalhos e conteúdo detectados automaticamente</span></div><div class="twrap"><table><thead><tr><th>Competência</th><th>Arquivo</th><th>Linhas</th><th>Aba</th><th>Linha do cabeçalho</th><th>Colunas reconhecidas</th><th>CPFs válidos</th><th>Status</th></tr></thead><tbody>${DOBRA_FILES.map(f=>{const x=S.dobraLoaded.find(a=>a.path===f.path),e=S.dobraErrors.find(a=>a.path===f.path);return `<tr><th>${compLabel(f.competencia)}</th><td class="left">${esc(f.path)}</td><td>${x?fN(x.rows):'—'}</td><td class="left">${x?esc(x.sheetName||'—'):'—'}</td><td>${x?fN(x.headerRow):'—'}</td><td class="left small">${x?esc(`CPF: ${x.headers.cpf||'—'} · Nome: ${x.headers.nome||'—'} · Valor: ${x.headers.valor||'—'}`):'—'}</td><td>${x?`${fN(x.cpfStats?.valid||0)} · ${fN(x.cpfStats?.unique||0)} únicos`:'—'}</td><td class="center"><span class="badge ${x&&x.cpfStats?.valid?'good':'bad'}">${x?(x.cpfStats?.valid?'Carregado':'Sem CPF válido'):'Erro '+esc(e?.error||'')}</span></td></tr>`;}).join('')}</tbody></table></div></div>`;}
 function settingInput(id,label,value,step='0.0001'){return `<div class="field"><label for="${id}">${label}</label><input type="number" id="${id}" step="${step}" value="${value}"></div>`;}
 function renderSettings(){const pairs=leaderPairs();return `<div class="callout"><strong>Como funciona:</strong> nesta versão estática, os cadastros ficam salvos no navegador. Os cálculos históricos usam os percentuais cadastrados por loja. O líder agora é cadastrado pela combinação <strong>loja + departamento</strong>, permitindo comparar responsáveis distintos do mesmo setor.</div>
@@ -673,6 +681,368 @@ function renderSettings(){const pairs=leaderPairs();return `<div class="callout"
   <div class="section"><div class="shead"><h2>Parâmetros por loja</h2><span class="legend">Valores percentuais, exceto FAP</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>INSS</th><th>RAT</th><th>FAP</th><th>Terceiros</th><th>FGTS</th><th>13º</th><th>Férias</th><th>1/3 férias</th></tr></thead><tbody>${S.stores.map(s=>{const c=codeOf(s),p=paramFor(s);return `<tr data-store-param="${esc(c)}"><th>${esc(c+' · '+nameOf(s))}</th>${['inss','rat','fap','terceiros','fgts','prov13','provFerias','provTerco'].map(k=>`<td><input class="store-param" data-key="${k}" type="number" step="0.0001" value="${p[k]}" style="width:88px;padding:6px;border:1px solid var(--line);border-radius:7px;text-align:right"></td>`).join('')}</tr>`;}).join('')}</tbody></table></div></div>
   <div class="section"><div class="shead"><h2>Líderes por loja e departamento</h2><span class="legend">${pairs.length} responsabilidades identificadas nos arquivos</span></div><div class="callout"><strong>Cadastro por responsabilidade:</strong> cada loja pode ter um líder diferente para o mesmo departamento. A versão atual não guarda vigência; quando houver troca de líder, adicionaremos início e fim da responsabilidade.</div><div class="twrap"><table><thead><tr><th>Loja</th><th>Departamento</th><th>Líder responsável</th></tr></thead><tbody>${pairs.map(p=>`<tr data-leader-store="${esc(p.store)}" data-leader-department="${esc(p.department)}"><th>${esc(codeOf(p.store)+' · '+nameOf(p.store))}</th><td class="left">${esc(codeOf(p.department)+' · '+nameOf(p.department))}</td><td><input class="leader-input" type="text" value="${esc(S.storeLeaders[p.key]||S.leaders[p.department]||'')}" placeholder="Nome do líder" style="width:100%;min-width:260px;padding:7px;border:1px solid var(--line);border-radius:7px"></td></tr>`).join('')}</tbody></table></div><div class="actions"><button class="btn primary" id="saveSettings">Salvar parametrização</button><button class="btn danger" id="resetSettings">Restaurar padrões</button></div></div>`;}
 function bindSettings(){const save=document.getElementById('saveSettings');if(!save)return;save.onclick=()=>{S.globalParam={inss:num(document.getElementById('g_inss').value),rat:num(document.getElementById('g_rat').value),fap:num(document.getElementById('g_fap').value),terceiros:num(document.getElementById('g_terceiros').value),fgts:num(document.getElementById('g_fgts').value),prov13:num(document.getElementById('g_13').value),provFerias:num(document.getElementById('g_ferias').value),provTerco:num(document.getElementById('g_terco').value)};document.querySelectorAll('tr[data-store-param]').forEach(tr=>{const c=tr.dataset.storeParam,Sv={};tr.querySelectorAll('.store-param').forEach(i=>Sv[i.dataset.key]=num(i.value));S.params[c]=Sv;});document.querySelectorAll('tr[data-leader-store]').forEach(tr=>{const store=tr.dataset.leaderStore,department=tr.dataset.leaderDepartment,input=tr.querySelector('.leader-input');if(!input)return;const v=input.value.trim(),key=leaderKey(store,department);if(v)S.storeLeaders[key]=v;else delete S.storeLeaders[key];});saveLocal();alert('Parametrização salva neste navegador.');render();};document.getElementById('resetSettings').onclick=()=>{if(confirm('Apagar parâmetros e líderes salvos neste navegador?')){S.params={};S.leaders={};S.storeLeaders={};S.globalParam={...DEFAULT_PARAM};saveLocal();render();}};}
+/* ===== Módulo Faturamento, produtividade e eficiência ===== */
+const REV_SOURCE={informed:{label:'Informado',cls:'good'},sum:{label:'Soma dos departamentos',cls:'good'},partial:{label:'Informado em parte do período',cls:'warn'},estimated:{label:'Estimado por rateio',cls:'warn'},none:{label:'Não informado',cls:'bad'}};
+function revCfg(){return {...DEFAULT_REVENUE_CFG,...(S.revenueCfg||{})};}
+function revSourceBadge(src){const s=REV_SOURCE[src]||REV_SOURCE.none;return `<span class="badge ${s.cls}">${s.label}</span>`;}
+function revGroupSource(items){
+  if(!items.length)return 'none';
+  if(items.some(x=>x.source==='estimated'))return 'estimated';
+  const known=items.filter(x=>x.source!=='none');
+  if(!known.length)return 'none';
+  if(known.length<items.length)return 'partial';
+  return known.every(x=>x.source==='informed')?'informed':'sum';
+}
+function revGet(comp,storeCode,depCode){const c=(S.revenue||{})[comp];if(!c)return null;const s=c[storeCode];if(!s)return null;const v=s[depCode];return (v===undefined||v===null||v==='')?null:num(v);}
+function revSet(comp,storeCode,depCode,value){
+  if(!S.revenue)S.revenue={};
+  const empty=(value===null||value===undefined||value===''||!isFinite(value));
+  if(empty){
+    if(S.revenue[comp]&&S.revenue[comp][storeCode]){
+      delete S.revenue[comp][storeCode][depCode];
+      if(!Object.keys(S.revenue[comp][storeCode]).length)delete S.revenue[comp][storeCode];
+      if(!Object.keys(S.revenue[comp]).length)delete S.revenue[comp];
+    }
+    return;
+  }
+  if(!S.revenue[comp])S.revenue[comp]={};
+  if(!S.revenue[comp][storeCode])S.revenue[comp][storeCode]={};
+  S.revenue[comp][storeCode][depCode]=value;
+}
+function revenueComps(){return S.competencias.filter(c=>c>=S.ini&&c<=S.fim);}
+function revMergeRevenue(base,over){
+  const out=JSON.parse(JSON.stringify(base||{}));
+  for(const [comp,stores] of Object.entries(over||{})){
+    if(!out[comp])out[comp]={};
+    for(const [st,deps] of Object.entries(stores||{})){
+      if(!out[comp][st])out[comp][st]={};
+      for(const [dp,v] of Object.entries(deps||{}))out[comp][st][dp]=v;
+    }
+  }
+  return out;
+}
+async function carregarFaturamentoRepo(){
+  try{
+    const r=await fetch(urlFor('faturamento.json'),{cache:'no-store'});
+    if(!r.ok)return;
+    const j=await r.json(),base=(j&&typeof j==='object'&&j.faturamento)?j.faturamento:j;
+    if(!base||typeof base!=='object')return;
+    S.revenueRepo=base;
+    S.revenue=revMergeRevenue(base,S.revenue);
+    if(j&&j.config&&typeof j.config==='object')S.revenueCfg={...DEFAULT_REVENUE_CFG,...j.config,...(S.revenueCfg||{})};
+  }catch(e){/* arquivo opcional */}
+}
+/* Monta a matriz competência × loja × departamento com folha e faturamento. */
+function revenueModel(comps){
+  const wanted=new Set(comps),cellMap=new Map();
+  for(const r of S.rows){
+    if(!wanted.has(r.competencia))continue;
+    const store=r.estabelecimento||'SEM ESTABELECIMENTO',dep=r.setor||'SEM CADASTRO',k=r.competencia+'|||'+store+'|||'+dep;
+    let a=cellMap.get(k);if(!a){a={comp:r.competencia,store,dep,rows:[]};cellMap.set(k,a);}
+    a.rows.push(r);
+  }
+  const cells=[],storeMap=new Map();
+  for(const c of cellMap.values()){
+    const m=metric(c.rows);
+    const cell={comp:c.comp,store:c.store,dep:c.dep,storeCode:codeOf(c.store),depCode:codeOf(c.dep),employeeMonths:m.headcount,gross:m.gross,economicCost:m.economicCost,cashCost:m.cashCost,overtime:m.overtime,manageable:m.manageable,revenue:null,source:'none',storeRevenue:null};
+    cells.push(cell);
+    const sk=cell.comp+'|||'+cell.store;
+    let s=storeMap.get(sk);
+    if(!s){s={comp:cell.comp,store:cell.store,storeCode:cell.storeCode,dep:'*',cells:[],employeeMonths:0,gross:0,economicCost:0,cashCost:0,overtime:0,revenue:null,source:'none',informedDept:0,residual:null,storeRevenue:null};storeMap.set(sk,s);}
+    s.cells.push(cell);s.employeeMonths+=cell.employeeMonths;s.gross+=cell.gross;s.economicCost+=cell.economicCost;s.cashCost+=cell.cashCost;s.overtime+=cell.overtime;
+  }
+  const cfg=revCfg();
+  for(const s of storeMap.values()){
+    let informed=0,anyDept=false;
+    for(const c of s.cells){const v=revGet(c.comp,c.storeCode,c.depCode);if(v!==null){c.revenue=v;c.source='informed';informed+=v;anyDept=true;}}
+    s.informedDept=informed;
+    const declared=revGet(s.comp,s.storeCode,'*');
+    if(declared!==null){s.revenue=declared;s.source='informed';}
+    else if(anyDept){s.revenue=informed;s.source='sum';}
+    if(s.revenue!==null)s.residual=s.revenue-informed;
+    const pending=s.cells.filter(c=>c.source==='none');
+    if(cfg.aloc!=='none'&&s.residual!==null&&s.residual>0&&pending.length){
+      const key=cfg.aloc==='head'?'employeeMonths':'economicCost',total=pending.reduce((t,c)=>t+(c[key]||0),0);
+      if(total>0)for(const c of pending){c.revenue=s.residual*(c[key]||0)/total;c.source='estimated';}
+    }
+    s.storeRevenue=s.revenue;
+    for(const c of s.cells)c.storeRevenue=s.revenue;
+  }
+  return {cells,stores:[...storeMap.values()]};
+}
+/* Agrega uma lista de células. Só some storeRevenue de listas com uma célula por competência. */
+function revAgg(list){
+  const o={employeeMonths:0,gross:0,economicCost:0,cashCost:0,overtime:0,manageable:0,revenue:0,revenueEstimated:0,storeRevenue:0,
+    emMatched:0,costMatched:0,grossMatched:0,overtimeMatched:0,withRevenue:0,withoutRevenue:0,emWithout:0,costWithout:0,emStore:0,costStore:0,storeMissing:0,cells:list.length};
+  for(const x of list){
+    o.employeeMonths+=x.employeeMonths||0;o.gross+=x.gross||0;o.economicCost+=x.economicCost||0;o.cashCost+=x.cashCost||0;o.overtime+=x.overtime||0;o.manageable+=x.manageable||0;
+    if(x.revenue!==null&&x.revenue!==undefined){
+      o.revenue+=x.revenue;o.emMatched+=x.employeeMonths||0;o.costMatched+=x.economicCost||0;o.grossMatched+=x.gross||0;o.overtimeMatched+=x.overtime||0;o.withRevenue++;
+      if(x.source==='estimated')o.revenueEstimated+=x.revenue;
+    }else{o.withoutRevenue++;o.emWithout+=x.employeeMonths||0;o.costWithout+=x.economicCost||0;}
+    if(x.storeRevenue!==null&&x.storeRevenue!==undefined){o.storeRevenue+=x.storeRevenue;o.emStore+=x.employeeMonths||0;o.costStore+=x.economicCost||0;}
+    else o.storeMissing++;
+  }
+  o.revPerEmployee=o.emMatched?o.revenue/o.emMatched:null;
+  o.costShare=o.revenue?o.costMatched/o.revenue*100:null;
+  o.grossShare=o.revenue?o.grossMatched/o.revenue*100:null;
+  o.overtimeShare=o.revenue?o.overtimeMatched/o.revenue*100:null;
+  o.leverage=o.costMatched?o.revenue/o.costMatched:null;
+  o.result=o.revenue-o.costMatched;
+  o.margin=o.revenue?o.result/o.revenue*100:null;
+  o.costPerEmployee=o.employeeMonths?o.economicCost/o.employeeMonths:0;
+  o.storeRevPerEmployee=o.emStore?o.storeRevenue/o.emStore:null;
+  o.costOverStore=o.storeRevenue?o.costStore/o.storeRevenue*100:null;
+  o.coverage=(o.withRevenue+o.withoutRevenue)?o.withRevenue/(o.withRevenue+o.withoutRevenue)*100:0;
+  return o;
+}
+function revFilterCells(model){return model.cells.filter(c=>(S.store==='all'||c.store===S.store)&&(S.department==='all'||c.dep===S.department));}
+function revFilterStores(model){return model.stores.filter(s=>S.store==='all'||s.store===S.store);}
+function revStoreGroups(model){
+  const mp=new Map();
+  for(const s of revFilterStores(model)){let g=mp.get(s.store);if(!g){g={key:s.store,label:codeOf(s.store)+' · '+nameOf(s.store),items:[]};mp.set(s.store,g);}g.items.push(s);}
+  return [...mp.values()].map(g=>({...g,...revAgg(g.items)})).sort((a,b)=>(b.revenue||0)-(a.revenue||0)||b.economicCost-a.economicCost);
+}
+function revDeptGroups(model){
+  const mp=new Map();
+  for(const c of revFilterCells(model)){const k=c.store+'|||'+c.dep;let g=mp.get(k);if(!g){g={key:k,store:c.store,dep:c.dep,items:[]};mp.set(k,g);}g.items.push(c);}
+  const list=[...mp.values()].map(g=>({...g,...revAgg(g.items),leader:leaderFor(g.store,g.dep)}));
+  const byDep=new Map();
+  for(const g of list){if(!byDep.has(g.dep))byDep.set(g.dep,[]);byDep.get(g.dep).push(g);}
+  for(const items of byDep.values()){
+    const medStore=median(items.map(x=>x.storeRevPerEmployee).filter(v=>Number.isFinite(v)&&v>0));
+    const medCost=median(items.map(x=>x.costOverStore).filter(v=>Number.isFinite(v)&&v>0));
+    const medOwn=median(items.map(x=>x.revPerEmployee).filter(v=>Number.isFinite(v)&&v>0));
+    for(const g of items){g.peers=items.length-1;g.peerStoreRevPerEmployee=medStore;g.peerCostOverStore=medCost;g.peerRevPerEmployee=medOwn;}
+  }
+  return list.sort((a,b)=>b.economicCost-a.economicCost);
+}
+function revStatus(g){
+  if(!g.peers||!Number.isFinite(g.costOverStore)||!g.peerCostOverStore)return {cls:'',label:'Sem pares suficientes'};
+  const d=g.costOverStore/g.peerCostOverStore-1;
+  if(d>=.15)return {cls:'bad',label:'Acima dos pares'};
+  if(d>=.05)return {cls:'warn',label:'Levemente acima'};
+  if(d<=-.05)return {cls:'good',label:'Abaixo dos pares'};
+  return {cls:'',label:'Na referência'};
+}
+function revMonthlySeries(model){
+  return revenueComps().map(c=>{
+    const items=S.department==='all'
+      ? model.stores.filter(s=>s.comp===c&&(S.store==='all'||s.store===S.store))
+      : model.cells.filter(x=>x.comp===c&&(S.store==='all'||x.store===S.store)&&x.dep===S.department);
+    const a=revAgg(items);
+    return {label:compLabel(c),comp:c,revenue:a.revenue,cost:a.costMatched||a.economicCost,share:a.costShare,em:a.employeeMonths,revPerEmployee:a.revPerEmployee};
+  });
+}
+function revMetaBadge(share){
+  const meta=revCfg().meta;
+  if(!meta||!Number.isFinite(share))return '';
+  if(share<=meta)return `<span class="badge good">Dentro da meta de ${fP(meta,2,false)}</span>`;
+  if(share<=meta*1.1)return `<span class="badge warn">Acima da meta de ${fP(meta,2,false)}</span>`;
+  return `<span class="badge bad">Muito acima da meta de ${fP(meta,2,false)}</span>`;
+}
+function revValueOrDash(v,fmt=fM){return (v===null||v===undefined||!isFinite(v))?'<span class="small">—</span>':fmt(v);}
+function revPeerText(value,peer,fmt=fM,lowerIsBetter=false){
+  if(!Number.isFinite(value)||!peer)return '<span class="small">—</span>';
+  const d=(value/peer-1)*100,bad=lowerIsBetter?d>0:d<0;
+  return `${fmt(value)}<div class="small ${Math.abs(d)<5?'':(bad?'bad':'good')}">${fP(d,1)} vs. mediana ${fmt(peer)}</div>`;
+}
+/* ---- Cadastro do faturamento ---- */
+function revParseComp(v){
+  const t=text(v).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  let m=t.match(/^(\d{4})[-\/.](\d{1,2})$/);if(m)return `${m[1]}-${String(+m[2]).padStart(2,'0')}`;
+  m=t.match(/^(\d{1,2})[-\/.](\d{4})$/);if(m)return `${m[2]}-${String(+m[1]).padStart(2,'0')}`;
+  m=t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/);if(m)return `${m[3]}-${String(+m[2]).padStart(2,'0')}`;
+  m=t.match(/^([a-z]{3})[a-z]*[-\/. ]?(\d{2,4})$/);
+  if(m){const i=MONTHS.indexOf(m[1]);if(i>=0){const y=m[2].length===2?'20'+m[2]:m[2];return `${y}-${String(i+1).padStart(2,'0')}`;}}
+  return null;
+}
+function revMatchStore(v){
+  const t=normalizeKey(v);if(!t)return null;
+  for(const s of S.stores){if(normalizeKey(codeOf(s))===t||normalizeKey(s)===t||normalizeKey(nameOf(s))===t)return codeOf(s);}
+  if(t.length>=4)for(const s of S.stores){if(normalizeKey(nameOf(s)).includes(t))return codeOf(s);}
+  return null;
+}
+function revMatchDep(v){
+  const t=normalizeKey(v);
+  if(!t||t==='total'||t==='loja'||t==='geral'||v==='*')return '*';
+  for(const d of S.departments){if(normalizeKey(codeOf(d))===t||normalizeKey(d)===t||normalizeKey(nameOf(d))===t)return codeOf(d);}
+  if(t.length>=4)for(const d of S.departments){if(normalizeKey(nameOf(d)).includes(t))return codeOf(d);}
+  return null;
+}
+function revApplyPaste(raw){
+  const lines=text(raw).split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  let applied=0;const problems=[];
+  for(const line of lines){
+    const parts=line.split(/\t|;|\|/).map(x=>x.trim());
+    if(parts.length<3){problems.push(`${line} · esperadas ao menos 3 colunas`);continue;}
+    const comp=revParseComp(parts[0]);
+    if(!comp){problems.push(`${parts[0]} · competência não reconhecida`);continue;}
+    if(!S.competencias.includes(comp)){problems.push(`${parts[0]} · competência sem folha carregada`);continue;}
+    const store=revMatchStore(parts[1]);
+    if(!store){problems.push(`${parts[1]} · loja não localizada`);continue;}
+    let dep='*',valueRaw=parts[2];
+    if(parts.length>=4){dep=revMatchDep(parts[2]);valueRaw=parts[3];if(!dep){problems.push(`${parts[2]} · departamento não localizado`);continue;}}
+    const value=num(valueRaw);
+    if(!isFinite(value)||(!value&&!/0/.test(valueRaw))){problems.push(`${valueRaw} · valor não numérico`);continue;}
+    revSet(comp,store,dep,value);applied++;
+  }
+  return {applied,problems};
+}
+function revExportJson(){
+  const payload={versao:1,gerado:new Date().toISOString(),config:revCfg(),faturamento:S.revenue||{}};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='faturamento.json';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+function revEditorGrid(comps){
+  const heads=comps.map(c=>`<th>${compLabel(c)}</th>`).join('');
+  const storeRows=S.stores.map(s=>{
+    const code=codeOf(s);
+    return `<tr><th class="left">${esc(code+' · '+nameOf(s))}</th>${comps.map(c=>{const v=revGet(c,code,'*');return `<td><input class="rev-input" type="text" inputmode="decimal" data-comp="${c}" data-store="${esc(code)}" data-dep="*" value="${v===null?'':fN(v,2)}"></td>`;}).join('')}</tr>`;
+  }).join('');
+  let depBlock=`<div class="callout" style="margin-top:10px"><strong>Faturamento por departamento:</strong> selecione uma loja específica no filtro acima para abrir o cadastro por departamento. Sem faturamento próprio do departamento, o painel continua respondendo pelos indicadores que usam o faturamento da loja.</div>`;
+  if(S.store!=='all'){
+    const code=codeOf(S.store);
+    const deps=[...new Set(S.rows.filter(r=>r.estabelecimento===S.store&&r.setor&&comps.includes(r.competencia)).map(r=>r.setor))].sort((a,b)=>nameOf(a).localeCompare(nameOf(b),'pt-BR'));
+    depBlock=`<div class="shead" style="margin-top:14px"><h2>Faturamento por departamento · ${esc(codeOf(S.store)+' · '+nameOf(S.store))}</h2><span class="legend">Preencha apenas os departamentos que possuem venda própria</span></div>
+    <div class="twrap"><table><thead><tr><th>Departamento</th>${heads}</tr></thead><tbody>${deps.map(d=>{const dc=codeOf(d);return `<tr><th class="left">${esc(nameOf(d))}<div class="cp">${esc(dc)}</div></th>${comps.map(c=>{const v=revGet(c,code,dc);return `<td><input class="rev-input" type="text" inputmode="decimal" data-comp="${c}" data-store="${esc(code)}" data-dep="${esc(dc)}" value="${v===null?'':fN(v,2)}"></td>`;}).join('')}</tr>`;}).join('')}</tbody></table></div>`;
+  }
+  return `<div class="twrap"><table><thead><tr><th>Loja · faturamento total</th>${heads}</tr></thead><tbody>${storeRows}</tbody></table></div>${depBlock}`;
+}
+function renderRevenueEditor(comps){
+  const cfg=revCfg();
+  return `<div class="section" id="revEditor">
+  <div class="shead"><h2>Preencher faturamento</h2><span class="legend">Valores em reais, por competência · aceita 1.234.567,89</span></div>
+  <div class="callout"><strong>Onde os valores ficam:</strong> os números digitados aqui são salvos no navegador (localStorage). Para que toda a equipe veja o mesmo faturamento, exporte o arquivo <code>faturamento.json</code> e publique-o na raiz do repositório: o painel lê esse arquivo automaticamente e o cadastro local continua prevalecendo sobre ele.</div>
+  <div class="form-grid">
+    <div class="field"><label for="revAloc">Departamentos sem faturamento próprio</label><select id="revAloc">
+      <option value="none"${cfg.aloc==='none'?' selected':''}>Não atribuir faturamento (recomendado)</option>
+      <option value="cost"${cfg.aloc==='cost'?' selected':''}>Ratear pelo custo econômico</option>
+      <option value="head"${cfg.aloc==='head'?' selected':''}>Ratear pelo quadro (funcionários-mês)</option>
+    </select></div>
+    <div class="field"><label for="revMeta">Meta de custo de pessoal sobre faturamento (%)</label><input type="number" id="revMeta" step="0.01" value="${cfg.meta||0}"></div>
+  </div>
+  <div class="small" style="margin:8px 0 12px">O rateio serve para distribuir o custo, não para medir produtividade: se o faturamento do departamento vier de rateio pelo quadro, o faturamento por funcionário fica igual em todos os departamentos; se vier de rateio pelo custo, ele apenas reproduz o custo por funcionário. Toda linha rateada é marcada como estimada.</div>
+  ${revEditorGrid(comps)}
+  <div class="actions"><button class="btn primary" id="revSave">Salvar faturamento</button><button class="btn" id="revExport">Exportar faturamento.json</button><button class="btn danger" id="revClear">Apagar faturamento salvo</button></div>
+  <div class="shead" style="margin-top:14px"><h2>Colar do Excel</h2><span class="legend">Uma linha por lançamento</span></div>
+  <div class="small" style="margin-bottom:6px">Formatos aceitos: <code>competência ; loja ; valor</code> ou <code>competência ; loja ; departamento ; valor</code>. Separadores: tabulação (colagem direta do Excel), ponto e vírgula ou barra vertical. A competência aceita <code>07/2026</code>, <code>2026-07</code> ou <code>jul/26</code>. A loja e o departamento aceitam o código ou o nome.</div>
+  <textarea id="revPaste" rows="6" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:9px;font-family:ui-monospace,Menlo,monospace;font-size:12px" placeholder="07/2026	01	4.812.334,90"></textarea>
+  <div class="actions"><button class="btn" id="revPasteApply">Aplicar colagem</button></div>
+  <div class="shead" style="margin-top:14px"><h2>Importar faturamento.json</h2><span class="legend">Cole o conteúdo de um arquivo exportado</span></div>
+  <textarea id="revImport" rows="4" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:9px;font-family:ui-monospace,Menlo,monospace;font-size:12px" placeholder='{"faturamento":{"2026-07":{"01":{"*":4812334.9}}}}'></textarea>
+  <div class="actions"><button class="btn" id="revImportApply">Importar JSON</button></div>
+  ${S.revenueMsg?`<div class="callout" style="margin-top:10px">${S.revenueMsg}</div>`:''}
+</div>`;
+}
+function renderRevenue(){
+  const comps=revenueComps();
+  if(!comps.length)return toolbar()+`<div class="errmsg"><strong>Nenhuma competência no período selecionado.</strong></div>`;
+  const model=revenueModel(comps),cfg=revCfg();
+  const scopeStores=revFilterStores(model),scopeCells=revFilterCells(model);
+  const top=S.department==='all'?revAgg(scopeStores):revAgg(scopeCells);
+  const storeGroups=revStoreGroups(model),depGroups=revDeptGroups(model);
+  const series=revMonthlySeries(model);
+  const pending=scopeStores.filter(s=>s.revenue===null);
+  const pendingLabel=[...new Set(pending.map(s=>compLabel(s.comp)))].join(', ');
+  const hasRevenue=top.revenue>0;
+  const editorBtn=`<button class="qbtn" id="revToggleEditor">${S.revenueEditor?'Fechar cadastro de faturamento':'Preencher faturamento'}</button>`;
+  const head=toolbar().replace('<div class="qbtns">',`<div class="qbtns">${editorBtn}`);
+  const scopeLabel=(S.store==='all'?'Rede consolidada':codeOf(S.store)+' · '+nameOf(S.store))+(S.department==='all'?'':' · '+nameOf(S.department));
+  if(!hasRevenue){
+    return head+`<div class="callout"><strong>Nenhum faturamento cadastrado para ${esc(periodLabel(S.ini,S.fim))}${S.store==='all'?'':' na loja selecionada'}.</strong> Informe abaixo o faturamento de cada loja por competência. Com o faturamento da loja o painel já responde produtividade, peso da folha sobre a venda e comparação entre pares; o faturamento por departamento é opcional e só é necessário onde existe venda própria.</div>`+renderRevenueEditor(comps);
+  }
+  const deltaFirst=series.find(x=>x.revenue>0),deltaLast=[...series].reverse().find(x=>x.revenue>0);
+  const trend=(deltaFirst&&deltaLast&&deltaFirst!==deltaLast&&deltaFirst.revenue)?pct(deltaLast.revenue,deltaFirst.revenue):null;
+  const trendShare=(deltaFirst&&deltaLast&&Number.isFinite(deltaFirst.share)&&Number.isFinite(deltaLast.share))?deltaLast.share-deltaFirst.share:null;
+  const cards=`<div class="cards">
+    ${card('Faturamento do período',fM(top.revenue),`${esc(scopeLabel)} · ${fN(top.withRevenue)} de ${fN(top.withRevenue+top.withoutRevenue)} recortes com faturamento informado${trend===null?'':` · ${fP(trend)} de ${deltaFirst.label} a ${deltaLast.label}`}`,series.map(x=>x.revenue),'#0f766e')}
+    ${card('Faturamento por funcionário-mês',revValueOrDash(top.revPerEmployee),`${fN(top.emMatched,1)} funcionários-mês no recorte com faturamento · ${top.employeeMonths!==top.emMatched?`${fN(top.employeeMonths-top.emMatched,1)} funcionários-mês sem faturamento atribuído`:'todo o quadro coberto'}`,series.map(x=>x.revPerEmployee||0),'#1d4ed8')}
+    ${card('Custo de pessoal sobre faturamento',top.costShare===null?'—':fP(top.costShare,2,false),`Custo econômico de ${fM(top.costMatched)} sobre ${fM(top.revenue)} ${revMetaBadge(top.costShare)}${trendShare===null?'':` · ${fP(trendShare,2)} p.p. no período`}`,series.map(x=>x.share||0),'#c2410c')}
+    ${card('Resultado após pessoal',fM(top.result),`Faturamento menos custo econômico de pessoal · margem de ${top.margin===null?'—':fP(top.margin,2,false)}`,series.map(x=>(x.revenue||0)-(x.cost||0)),top.result>=0?'#15803d':'#b91c1c')}
+  </div>`;
+  const analysis=`<div class="analysis">
+    <div class="aitem"><div class="ak">Faturamento por R$ 1 de folha</div><div class="av">${top.leverage===null?'—':'R$ '+fN(top.leverage,2)}</div><div class="as">Quanto a operação fatura para cada real de custo econômico de pessoal.</div></div>
+    <div class="aitem"><div class="ak">Vencimentos sobre faturamento</div><div class="av">${top.grossShare===null?'—':fP(top.grossShare,2,false)}</div><div class="as">Apenas proventos da folha, sem encargos e provisões.</div></div>
+    <div class="aitem"><div class="ak">Horas extras sobre faturamento</div><div class="av ${top.overtimeShare>1?'warn':''}">${top.overtimeShare===null?'—':fP(top.overtimeShare,2,false)}</div><div class="as">Peso das horas extras e reflexos na venda do período.</div></div>
+    <div class="aitem"><div class="ak">Cobertura do cadastro</div><div class="av ${top.coverage>=99?'good':top.coverage>=70?'warn':'bad'}">${fP(top.coverage,1,false)}</div><div class="as">${top.revenueEstimated>0?`${fM(top.revenueEstimated)} do faturamento vem de rateio estimado.`:'Nenhum valor estimado por rateio no recorte.'}</div></div>
+  </div>`;
+  const alert=pending.length?`<div class="comparison-note"><strong>Faturamento incompleto:</strong> ${fN(pending.length)} combinação(ões) de loja e competência do recorte estão sem faturamento informado (${esc(pendingLabel)}). Os indicadores acima consideram apenas os recortes com faturamento; ${fM(top.costWithout)} de custo econômico e ${fN(top.emWithout,1)} funcionários-mês ficaram de fora do cálculo de produtividade.</div>`:'';
+  const storeTable=`<div class="section"><div class="shead"><h2>Faturamento e eficiência por loja</h2><span class="legend">${esc(periodLabel(S.ini,S.fim))} · valores acumulados</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>Faturamento</th><th>Origem</th><th>Funcionários-mês</th><th>Faturamento / funcionário</th><th>Vencimentos</th><th>Custo econômico</th><th>Custo / funcionário</th><th>Pessoal / faturamento</th><th>Horas extras / faturamento</th><th>Resultado após pessoal</th></tr></thead><tbody>
+  ${storeGroups.map((g,i)=>`<tr class="drill-row" data-open-store="${esc(g.key)}"><th><span class="rank">${i+1}</span>${esc(g.label)}<span class="drill-arrow">›</span></th><td class="cv">${fM(g.revenue)}</td><td>${revSourceBadge(revGroupSource(g.items))}</td><td>${fN(g.employeeMonths,1)}</td><td class="cv">${revValueOrDash(g.revPerEmployee)}</td><td>${fM(g.gross)}</td><td>${fM(g.economicCost)}</td><td>${fM(g.costPerEmployee)}</td><td class="${g.costShare!==null&&cfg.meta&&g.costShare>cfg.meta?'bad':''}">${g.costShare===null?'—':fP(g.costShare,2,false)}</td><td class="${g.overtimeShare>1?'warn':''}">${g.overtimeShare===null?'—':fP(g.overtimeShare,2,false)}</td><td class="${g.result>=0?'good':'bad'}">${fM(g.result)}</td></tr>`).join('')}
+  <tr class="total"><th>Total do recorte</th><td>${fM(top.revenue)}</td><td>—</td><td>${fN(top.employeeMonths,1)}</td><td>${revValueOrDash(top.revPerEmployee)}</td><td>${fM(top.gross)}</td><td>${fM(top.economicCost)}</td><td>${fM(top.costPerEmployee)}</td><td>${top.costShare===null?'—':fP(top.costShare,2,false)}</td><td>${top.overtimeShare===null?'—':fP(top.overtimeShare,2,false)}</td><td class="${top.result>=0?'good':'bad'}">${fM(top.result)}</td></tr>
+  </tbody></table></div></div>`;
+  const depTable=`<div class="section"><div class="shead"><h2>Faturamento por funcionário dentro do departamento</h2><span class="legend">${esc(scopeLabel)} · ${esc(periodLabel(S.ini,S.fim))}</span></div>
+  <div class="callout"><strong>Como ler:</strong> <em>Fat. do departamento / funcionário</em> só aparece nos departamentos com venda própria informada. <em>Fat. da loja / funcionário do departamento</em> existe para todos e mede quanto de venda a loja sustenta por pessoa alocada naquele departamento — é o indicador de produtividade válido para áreas de apoio. <em>Custo sobre faturamento da loja</em> mostra quanto da venda da loja é consumido pela folha daquele departamento, e é o número comparado entre lojas.</div>
+  <div class="twrap"><table><thead><tr><th>Loja</th><th>Departamento</th><th>Líder</th><th>Funcionários-mês</th><th>Fat. do departamento</th><th>Origem</th><th>Fat. do depto / funcionário</th><th>Fat. da loja / funcionário do depto</th><th>Custo econômico</th><th>Custo / funcionário</th><th>Custo sobre fat. da loja</th><th>Pessoal / fat. do depto</th><th>Comparação com pares</th></tr></thead><tbody>
+  ${depGroups.map(g=>{const st=revStatus(g);return `<tr class="drill-row" data-open-department="${esc(g.dep)}"><th>${esc(codeOf(g.store))}</th><td class="left cv">${esc(nameOf(g.dep))}<span class="drill-arrow">›</span><div class="cp">${esc(codeOf(g.dep))}</div></td><td class="left small">${esc(g.leader)}</td><td>${fN(g.employeeMonths,1)}</td><td>${g.withRevenue?fM(g.revenue):'<span class="small">—</span>'}</td><td>${revSourceBadge(revGroupSource(g.items))}</td><td class="cv">${revPeerText(g.revPerEmployee,g.peerRevPerEmployee,fM,false)}</td><td class="cv">${revPeerText(g.storeRevPerEmployee,g.peerStoreRevPerEmployee,fM,false)}</td><td>${fM(g.economicCost)}</td><td>${fM(g.costPerEmployee)}</td><td>${revPeerText(g.costOverStore,g.peerCostOverStore,v=>fP(v,2,false),true)}</td><td>${g.costShare===null?'<span class="small">—</span>':fP(g.costShare,2,false)}</td><td>${st.label==='Sem pares suficientes'?'<span class="small">Sem pares suficientes</span>':`<span class="badge ${st.cls}">${st.label}</span><div class="small">${fN(g.peers)} par(es) do mesmo departamento</div>`}</td></tr>`;}).join('')}
+  </tbody></table></div></div>`;
+  const charts=`<div class="p2grid">
+    <div class="section"><div class="shead"><h2>Faturamento × custo de pessoal</h2><span class="legend">Competência a competência</span></div>${lineChart(series.map(x=>({label:x.label,value:x.revenue})),series.map(x=>({label:x.label,value:x.cost})),'Faturamento','Custo econômico')}</div>
+    <div class="section"><div class="shead"><h2>Pessoal sobre faturamento</h2><span class="legend">Percentual do custo econômico</span></div>${lineChart(series.map(x=>({label:x.label,value:Number.isFinite(x.share)?x.share:0})),null,'% sobre faturamento','',false)}</div>
+  </div>`;
+  const ranking=`<div class="p2grid">
+    <div class="section"><div class="shead"><h2>Maior faturamento da loja por funcionário</h2><span class="legend">Top 12 departamentos do recorte</span></div>${horizontalBars(depGroups.filter(g=>Number.isFinite(g.storeRevPerEmployee)).sort((a,b)=>b.storeRevPerEmployee-a.storeRevPerEmployee).slice(0,12).map(g=>({label:codeOf(g.store)+' · '+nameOf(g.dep),value:g.storeRevPerEmployee})),'value','label')}</div>
+    <div class="section"><div class="shead"><h2>Maior consumo da venda pela folha</h2><span class="legend">Custo do departamento sobre o faturamento da loja</span></div>${horizontalBars(depGroups.filter(g=>Number.isFinite(g.costOverStore)).sort((a,b)=>b.costOverStore-a.costOverStore).slice(0,12).map(g=>({label:codeOf(g.store)+' · '+nameOf(g.dep),value:g.costOverStore})),'value','label',v=>fP(v,2,false))}</div>
+  </div>`;
+  const worst=depGroups.filter(g=>g.peers&&Number.isFinite(g.costOverStore)&&g.peerCostOverStore).map(g=>({...g,gap:g.costOverStore-g.peerCostOverStore})).sort((a,b)=>b.gap-a.gap)[0];
+  let conclusion=`No recorte ${esc(scopeLabel)} de ${esc(periodLabel(S.ini,S.fim))}, o faturamento considerado é de <strong>${fM(top.revenue)}</strong> e o custo econômico de pessoal correspondente é de <strong>${fM(top.costMatched)}</strong>, ou <strong>${top.costShare===null?'—':fP(top.costShare,2,false)}</strong> da venda. `;
+  conclusion+=`Cada funcionário-mês sustenta <strong>${revValueOrDash(top.revPerEmployee)}</strong> de faturamento e cada real de folha corresponde a <strong>${top.leverage===null?'—':'R$ '+fN(top.leverage,2)}</strong> vendidos. `;
+  if(trend!==null&&trendShare!==null)conclusion+=`De ${deltaFirst.label} a ${deltaLast.label} o faturamento variou <strong>${fP(trend)}</strong> e o peso da folha sobre a venda variou <strong>${fP(trendShare,2)} p.p.</strong> `;
+  if(worst)conclusion+=`O maior desvio entre pares está em <strong>${esc(nameOf(worst.dep))}</strong> da loja <strong>${esc(codeOf(worst.store))}</strong>, que consome ${fP(worst.costOverStore,2,false)} do faturamento da loja contra ${fP(worst.peerCostOverStore,2,false)} da mediana dos pares. `;
+  if(top.revenueEstimated>0)conclusion+=`<strong>Atenção:</strong> ${fM(top.revenueEstimated)} do faturamento apresentado vem de rateio estimado e não de valor informado. `;
+  if(pending.length)conclusion+=`<strong>${fN(pending.length)}</strong> recorte(s) de loja e competência seguem sem faturamento cadastrado e ficaram fora dos indicadores.`;
+  return head
+    +`<div class="callout"><strong>De onde vem cada número:</strong> a folha é lida dos arquivos XLSX do repositório e o faturamento é cadastrado manualmente por competência e loja, com detalhe opcional por departamento. O custo econômico segue a mesma fórmula dos demais módulos: remuneração recorrente, encargos recorrentes, provisões de férias, terço e 13º e encargos sobre as provisões. O faturamento é tratado como dado informado; nenhum valor é estimado sem estar marcado como tal.</div>`
+    +(S.revenueEditor?renderRevenueEditor(comps):'')
+    +alert
+    +cards
+    +analysis
+    +`<div class="callout" style="background:#fff;border-color:var(--line)">${conclusion}</div>`
+    +charts
+    +storeTable
+    +depTable
+    +ranking;
+}
+function bindRevenue(){
+  const toggle=document.getElementById('revToggleEditor');
+  if(toggle)toggle.onclick=()=>{S.revenueEditor=!S.revenueEditor;S.revenueMsg='';render();};
+  const save=document.getElementById('revSave');
+  if(save){
+    save.onclick=()=>{
+      document.querySelectorAll('.rev-input').forEach(i=>{
+        const v=i.value.trim();
+        revSet(i.dataset.comp,i.dataset.store,i.dataset.dep,v===''?null:num(v));
+      });
+      const aloc=document.getElementById('revAloc'),meta=document.getElementById('revMeta');
+      S.revenueCfg={...revCfg(),aloc:aloc?aloc.value:'none',meta:meta?num(meta.value):0};
+      saveLocal();S.revenueMsg='Faturamento salvo neste navegador.';render();
+    };
+    const exp=document.getElementById('revExport');if(exp)exp.onclick=()=>revExportJson();
+    const clear=document.getElementById('revClear');
+    if(clear)clear.onclick=()=>{if(confirm('Apagar todo o faturamento cadastrado neste navegador?')){S.revenue={};saveLocal();S.revenueMsg='Faturamento local apagado. Valores publicados em faturamento.json voltam a valer no próximo carregamento.';render();}};
+    const paste=document.getElementById('revPasteApply');
+    if(paste)paste.onclick=()=>{
+      const box=document.getElementById('revPaste'),r=revApplyPaste(box?box.value:'');
+      saveLocal();
+      S.revenueMsg=`<strong>${fN(r.applied)} lançamento(s) aplicados.</strong>`+(r.problems.length?` ${fN(r.problems.length)} linha(s) ignoradas: ${esc(r.problems.slice(0,8).join(' · '))}${r.problems.length>8?' …':''}`:'');
+      render();
+    };
+    const imp=document.getElementById('revImportApply');
+    if(imp)imp.onclick=()=>{
+      const box=document.getElementById('revImport');
+      try{
+        const j=JSON.parse(box.value),base=(j&&j.faturamento)?j.faturamento:j;
+        if(!base||typeof base!=='object')throw new Error('estrutura inválida');
+        S.revenue=revMergeRevenue(S.revenue,base);
+        if(j&&j.config)S.revenueCfg={...revCfg(),...j.config};
+        saveLocal();S.revenueMsg='Faturamento importado do JSON e salvo neste navegador.';
+      }catch(e){S.revenueMsg='<strong>Não foi possível importar o JSON:</strong> '+esc(e.message)+'.';}
+      render();
+    };
+  }
+}
 /* ===== Módulo Afastamentos ===== */
 const LEAVE_HOURS_PER_DAY=220/30;
 const LEAVE_TYPES=[
@@ -859,7 +1229,7 @@ function renderLeaves(){
 <div class="section"><div class="shead"><h2>Departamentos com maior tempo parado</h2><span class="legend">Clique para filtrar este módulo pelo departamento</span></div><div class="twrap"><table><thead><tr><th>Loja</th><th>Departamento</th><th>Pessoas</th><th>Dias</th><th>Dias por pessoa</th><th>Valor em folha</th></tr></thead><tbody>${deps.slice(0,20).map(x=>`<tr class="drill-row" data-leave-focus-department="${esc(x.department)}" data-leave-focus-store="${esc(x.store)}"><th>${esc(codeOf(x.store))}</th><td class="left cv">${esc(nameOf(x.department))}<span class="drill-arrow">›</span></td><td>${fN(x.people.size)}</td><td>${fN(x.days,0)}</td><td>${fN(x.people.size?x.days/x.people.size:0,1)}</td><td>${fM(x.value)}</td></tr>`).join('')}</tbody></table></div></div>
 ${transition.size?`<div class="callout"><strong>Em transição para o INSS:</strong> ${fN(transition.size)} contrato(s) registram a rubrica de salário-doença com afastamento em ${compLabel(S.fim)}, o que normalmente antecede a concessão do benefício e a suspensão do contrato no mês seguinte.</div>`:''}`;
 }
-function render(){if(!S.competencias.length){document.getElementById('main').innerHTML=`<div class="errmsg"><strong>Não foi possível ler as planilhas.</strong><br>Verifique se os arquivos permanecem públicos, se os nomes não foram alterados e se a biblioteca XLSX foi carregada.</div>`;return;}document.querySelectorAll('#moduleButtons .btn').forEach(b=>b.classList.toggle('active',b.dataset.module===S.module));let html='';if(S.module==='home')html=renderHome();else if(S.module==='stores')html=renderStores();else if(S.module==='departments')html=renderDepartments();else if(S.module==='evolution')html=renderEvolution();else if(S.module==='comparison')html=renderComparison();else if(S.module==='diagnosis')html=renderDiagnosis();else if(S.module==='leaders')html=renderLeaders();else if(S.module==='dobras')html=renderDobras();else if(S.module==='leaves')html=renderLeaves();else if(S.module==='drill')html=renderDrill();else if(S.module==='audit')html=renderAudit();else html=renderSettings();document.getElementById('main').innerHTML=html;bindToolbar();bindComparisonToolbar();bindDiagnosis();bindLeaders();bindDobras();bindLeaves();bindDrill();bindDrillEntries();bindSettings();}
+function render(){if(!S.competencias.length){document.getElementById('main').innerHTML=`<div class="errmsg"><strong>Não foi possível ler as planilhas.</strong><br>Verifique se os arquivos permanecem públicos, se os nomes não foram alterados e se a biblioteca XLSX foi carregada.</div>`;return;}document.querySelectorAll('#moduleButtons .btn').forEach(b=>b.classList.toggle('active',b.dataset.module===S.module));let html='';if(S.module==='home')html=renderHome();else if(S.module==='stores')html=renderStores();else if(S.module==='departments')html=renderDepartments();else if(S.module==='revenue')html=renderRevenue();else if(S.module==='evolution')html=renderEvolution();else if(S.module==='comparison')html=renderComparison();else if(S.module==='diagnosis')html=renderDiagnosis();else if(S.module==='leaders')html=renderLeaders();else if(S.module==='dobras')html=renderDobras();else if(S.module==='leaves')html=renderLeaves();else if(S.module==='drill')html=renderDrill();else if(S.module==='audit')html=renderAudit();else html=renderSettings();document.getElementById('main').innerHTML=html;bindToolbar();bindComparisonToolbar();bindDiagnosis();bindLeaders();bindDobras();bindLeaves();bindRevenue();bindDrill();bindDrillEntries();bindSettings();}
 document.getElementById('moduleButtons').addEventListener('click',e=>{const b=e.target.closest('[data-module]');if(!b)return;S.module=b.dataset.module;if(S.module!=='leaves'){S.leaveContract=null;S.leaveContractStore=null;}render();});
 const ACCESS_HASH='eb8b1b001fa9453a76305723df444230e18a31e19a09ebfe6e5612006bbec12b';
 const ACCESS_SESSION_KEY='dnaFolha.access.v1';
