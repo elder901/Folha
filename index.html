@@ -701,6 +701,7 @@ function bindSettings(){const save=document.getElementById('saveSettings');if(!s
 /* ===== Módulo Faturamento, margem e produtividade ===== */
 const FAT_UNIT_DEFAULT={'matogrosso':'0001','meloviana':'0002','amazonas':'0003','interlagos':'0004'};
 const FAT_SECTION_DEFAULT={'010':'002','020':'005','055':'003','060':'003','075':'004','080':'006'};
+const FAT_SECTION_NAMES={'010':'Açougue','011':'Decomposição','015':'Bazar','017':'Comida Japonesa','020':'Hortifruti','025':'Mercearia Alto Giro','030':'Mercearia Salgada/Latarias','035':'Mercearia Doce','040':'Bebidas','045':'Perfumaria','050':'Limpeza','055':'Padaria Própria','060':'Padaria Terceiro','065':'Perecíveis Congelados','070':'Perecíveis Lácteos','075':'Rotisseria','080':'Cozinha','085':'Tabacaria','090':'Sazonais','095':'Apropriações'};
 const FAT_CENTRAL_DEFAULT={'0005':'003'};
 const REV_SOURCE={arquivo:{label:'Relatório do ERP',cls:'good'},informed:{label:'Digitado',cls:'good'},sum:{label:'Soma das seções',cls:'good'},partial:{label:'Parcial no período',cls:'warn'},estimated:{label:'Estimado por rateio',cls:'warn'},none:{label:'Sem faturamento',cls:'bad'}};
 function revCfg(){return {...DEFAULT_REVENUE_CFG,...(S.revenueCfg||{})};}
@@ -1073,24 +1074,42 @@ function revUnitPanel(model){
   </tbody></table></div>`;
 }
 function revSectionPanel(model){
-  const secs=[...new Map((S.fat||[]).map(r=>[r.secao,r.secaoNome])).entries()].sort((a,b)=>a[0].localeCompare(b[0]));
-  if(!secs.length)return '';
-  const totals=new Map();
-  for(const r of (S.fat||[])){if(!revenueComps().includes(r.competencia))continue;totals.set(r.secao,(totals.get(r.secao)||0)+r.venda);}
-  const opts=code=>`<option value="">— sem setor na folha —</option>`+S.departments.map(d=>`<option value="${esc(codeOf(d))}"${codeOf(d)===code?' selected':''}>${esc(codeOf(d)+' · '+nameOf(d))}</option>`).join('');
-  return `<div class="shead" style="margin-top:14px"><h2>Seções de venda × setores da folha</h2><span class="legend">Várias seções podem apontar para o mesmo setor</span></div>
-  <div class="callout">Cuidado com nomes iguais e significados diferentes: a seção <strong>Limpeza</strong> é a venda de produtos de limpeza, enquanto o setor <strong>Limpeza</strong> da folha é o pessoal da limpeza predial. Seções sem setor continuam somando no faturamento da loja, mas não geram indicador de departamento.</div>
-  <div class="twrap"><table><thead><tr><th>Seção de venda</th><th>Venda no período</th><th>Setor da folha</th></tr></thead><tbody>
-  ${secs.map(([cod,nome])=>`<tr><th class="left">${esc(nome)}<div class="cp">${esc(cod)}</div></th><td>${fM(totals.get(cod)||0)}</td><td class="left"><select class="rev-map-section" data-section="${esc(cod)}" style="min-width:280px;padding:6px;border:1px solid var(--line);border-radius:7px">${opts(sectionFor(cod)||'')}</select></td></tr>`).join('')}
+  const doArquivo=new Map((S.fat||[]).map(r=>[r.secao,r.secaoNome]));
+  const mapa=sectionMapAll();
+  const cods=[...new Set([...doArquivo.keys(),...Object.keys(FAT_SECTION_NAMES),...Object.keys(mapa)])].sort();
+  const nomeDe=cod=>doArquivo.get(cod)||FAT_SECTION_NAMES[cod]||('Seção '+cod);
+  const totals=new Map(),comps=revenueComps();
+  for(const r of (S.fat||[])){if(!comps.includes(r.competencia))continue;totals.set(r.secao,(totals.get(r.secao)||0)+r.venda);}
+  const opts=code=>`<option value="">— não gera indicador de setor —</option>`+S.departments.map(d=>`<option value="${esc(codeOf(d))}"${codeOf(d)===code?' selected':''}>${esc(codeOf(d)+' · '+nameOf(d))}</option>`).join('');
+  const porSetor=new Map();
+  for(const cod of cods){const st=sectionFor(cod);if(!st)continue;if(!porSetor.has(st))porSetor.set(st,[]);porSetor.get(st).push(nomeDe(cod));}
+  const resumo=[...porSetor.entries()].map(([st,secs])=>{const d=departmentByCode(st);return `<li><strong>${esc(d?nameOf(d):st)}</strong> recebe a venda de ${esc(secs.join(' + '))}</li>`;}).join('');
+  return `<div class="shead" style="margin-top:14px"><h2>Quais setores faturam</h2><span class="legend">Seção de venda do ERP → setor da folha</span></div>
+  <div class="callout"><strong>É aqui que se define o faturamento por departamento.</strong> Você não digita o valor: aponta qual seção de venda do ERP pertence a qual setor da folha, e o painel puxa venda, CMV e margem daquela seção todo mês, sozinho. Setores deixados em branco não geram indicador próprio e são avaliados pela venda da loja por funcionário.
+  ${resumo?`<ul style="margin:8px 0 0 18px">${resumo}</ul>`:''}</div>
+  <div class="callout">Cuidado com nomes iguais e significados opostos: a seção <strong>Limpeza</strong> é a venda de produtos de limpeza, enquanto o setor <strong>Limpeza</strong> da folha é o pessoal da limpeza predial. São coisas diferentes e não devem ser ligadas.</div>
+  ${doArquivo.size?'':'<div class="comparison-note">Ainda não há relatório do ERP carregado, então a lista abaixo usa os códigos padrão do RP One e as vendas aparecem zeradas. As correspondências já valem: assim que os arquivos forem publicados em <code>Faturamento/</code>, os indicadores por setor aparecem sem mais nenhum cadastro.</div>'}
+  <div class="twrap"><table><thead><tr><th>Seção de venda</th><th>Venda no período</th><th>Setor da folha que fica com esse faturamento</th></tr></thead><tbody>
+  ${cods.map(cod=>`<tr><th class="left">${esc(nomeDe(cod))}<div class="cp">${esc(cod)}</div></th><td>${totals.get(cod)?fM(totals.get(cod)):'<span class="small">—</span>'}</td><td class="left"><select class="rev-map-section" data-section="${esc(cod)}" style="min-width:280px;padding:6px;border:1px solid var(--line);border-radius:7px">${opts(sectionFor(cod)||'')}</select></td></tr>`).join('')}
   </tbody></table></div>`;
 }
 function revCentralPanel(){
-  const opts=code=>`<option value="">— loja normal, com venda própria —</option>`+S.departments.map(d=>`<option value="${esc(codeOf(d))}"${codeOf(d)===code?' selected':''}>${esc(codeOf(d)+' · '+nameOf(d))}</option>`).join('');
+  const comVenda=new Set();
+  for(const r of (S.fat||[])){const c=unitFor(r.unit);if(c&&r.venda)comVenda.add(c);}
+  const temRelatorio=(S.fat||[]).length>0;
   const m=centralMapAll();
-  return `<div class="shead" style="margin-top:14px"><h2>Estabelecimentos centrais</h2><span class="legend">Folha própria, sem venda registrada na unidade</span></div>
-  <div class="callout">Um estabelecimento central produz para a rede inteira e não aparece no relatório de venda. O painel tira essas lojas da comparação entre pares e consolida o setor atendido numa linha de rede.</div>
-  <div class="twrap"><table><thead><tr><th>Estabelecimento</th><th>Setor que atende na rede</th></tr></thead><tbody>
-  ${S.stores.map(s=>`<tr><th class="left">${esc(codeOf(s)+' · '+nameOf(s))}</th><td class="left"><select class="rev-map-central" data-store="${esc(codeOf(s))}" style="min-width:280px;padding:6px;border:1px solid var(--line);border-radius:7px">${opts(text(m[codeOf(s)]||''))}</select></td></tr>`).join('')}
+  const opts=code=>`<option value="">Vende ao cliente — é uma loja</option>`+S.departments.map(d=>`<option value="${esc(codeOf(d))}"${codeOf(d)===code?' selected':''}>Não vende — produz para a rede no setor ${esc(codeOf(d)+' · '+nameOf(d))}</option>`).join('');
+  const situacao=s=>{
+    const c=codeOf(s);
+    if(m[c])return '<span class="badge warn">Unidade produtiva</span>';
+    if(!temRelatorio)return '<span class="small">Sem relatório carregado</span>';
+    if(comVenda.has(c))return '<span class="badge good">Tem venda no ERP</span>';
+    return '<span class="badge bad">Sem venda no ERP</span>';
+  };
+  return `<div class="shead" style="margin-top:14px"><h2>O que cada estabelecimento faz</h2><span class="legend">Loja que vende, ou unidade que só produz</span></div>
+  <div class="callout">A folha tem um estabelecimento para cada CNPJ, mas nem todo estabelecimento vende ao cliente. Uma <strong>unidade produtiva</strong> — a padaria central, por exemplo — tem funcionários próprios e produz para a rede inteira, então a venda dela é registrada nas lojas e ela não aparece no relatório do ERP. Marcando aqui, o painel deixa de cobrar faturamento dessa unidade, tira ela da comparação entre pares e junta a mão de obra dela com a venda das lojas numa linha de <em>Consolidação de rede</em>. Deixe como loja qualquer estabelecimento que tenha caixa e atenda cliente.</div>
+  <div class="twrap"><table><thead><tr><th>Estabelecimento</th><th>Situação</th><th>Papel</th></tr></thead><tbody>
+  ${S.stores.map(s=>`<tr><th class="left">${esc(codeOf(s)+' · '+nameOf(s))}</th><td>${situacao(s)}</td><td class="left"><select class="rev-map-central" data-store="${esc(codeOf(s))}" style="min-width:330px;padding:6px;border:1px solid var(--line);border-radius:7px">${opts(text(m[codeOf(s)]||''))}</select></td></tr>`).join('')}
   </tbody></table></div>`;
 }
 function revEditorGrid(comps){
@@ -1099,15 +1118,20 @@ function revEditorGrid(comps){
     const code=codeOf(s);
     return `<tr><th class="left">${esc(code+' · '+nameOf(s))}</th>${comps.map(c=>{const v=revGet(c,code,'*');return `<td><input class="rev-input" type="text" inputmode="decimal" data-comp="${c}" data-store="${esc(code)}" data-dep="*" value="${v===null?'':fN(v,2)}"></td>`;}).join('')}</tr>`;
   }).join('');
-  let depBlock='';
-  if(S.store!=='all'){
-    const code=codeOf(S.store);
-    const deps=[...new Set(S.rows.filter(r=>r.estabelecimento===S.store&&r.setor&&comps.includes(r.competencia)).map(r=>r.setor))].sort((a,b)=>nameOf(a).localeCompare(nameOf(b),'pt-BR'));
-    depBlock=`<div class="shead" style="margin-top:14px"><h2>Faturamento por setor · ${esc(codeOf(S.store)+' · '+nameOf(S.store))}</h2><span class="legend">Preenchido aqui, prevalece sobre o relatório do ERP</span></div>
+  const alvos=new Set(Object.values(sectionMapAll()).filter(Boolean).map(text));
+  const lojas=S.store==='all'?S.stores.filter(st=>!isCentralStore(st)):[S.store];
+  const gradeSetor=st=>{
+    const code=codeOf(st);
+    let deps=[...new Set(S.rows.filter(r=>r.estabelecimento===st&&r.setor&&comps.includes(r.competencia)).map(r=>r.setor))];
+    const comVenda=deps.filter(d=>alvos.has(codeOf(d)));
+    deps=(comVenda.length?comVenda:deps).sort((a,b)=>nameOf(a).localeCompare(nameOf(b),'pt-BR'));
+    if(!deps.length)return '';
+    return `<div class="shead" style="margin-top:12px"><h2>${esc(code+' · '+nameOf(st))}</h2><span class="legend">${comVenda.length?'Setores com seção de venda':'Todos os setores da loja'}</span></div>
     <div class="twrap"><table><thead><tr><th>Setor</th>${heads}</tr></thead><tbody>${deps.map(d=>{const dc=codeOf(d);return `<tr><th class="left">${esc(nameOf(d))}<div class="cp">${esc(dc)}</div></th>${comps.map(c=>{const v=revGet(c,code,dc);return `<td><input class="rev-input" type="text" inputmode="decimal" data-comp="${c}" data-store="${esc(code)}" data-dep="${esc(dc)}" value="${v===null?'':fN(v,2)}"></td>`;}).join('')}</tr>`;}).join('')}</tbody></table></div>`;
-  }else{
-    depBlock=`<div class="small" style="margin-top:8px">Selecione uma loja no filtro acima para abrir o cadastro manual por setor.</div>`;
-  }
+  };
+  const depBlock=`<div class="shead" style="margin-top:14px"><h2>Faturamento por setor, digitado à mão</h2><span class="legend">Prevalece sobre o relatório do ERP</span></div>
+  <div class="callout">Use só para corrigir um mês específico ou para um setor que o ERP não separa. O caminho normal é o de-para de seções acima, que traz venda e margem automaticamente.</div>
+  ${lojas.map(gradeSetor).join('')}`;
   return `<div class="shead" style="margin-top:14px"><h2>Cadastro manual do faturamento</h2><span class="legend">Só é necessário onde não há relatório do ERP</span></div><div class="twrap"><table><thead><tr><th>Loja · faturamento total</th>${heads}</tr></thead><tbody>${storeRows}</tbody></table></div>${depBlock}`;
 }
 function renderRevenueEditor(comps,model){
@@ -1120,14 +1144,14 @@ function renderRevenueEditor(comps,model){
   ${revCentralPanel()}
   <div class="shead" style="margin-top:14px"><h2>Parâmetros de análise</h2><span class="legend">Rateio e meta</span></div>
   <div class="form-grid">
-    <div class="field"><label for="revAloc">Setores sem venda própria</label><select id="revAloc">
-      <option value="none"${cfg.aloc==='none'?' selected':''}>Não atribuir faturamento (recomendado)</option>
+    <div class="field"><label for="revAloc">Setores sem seção de venda correspondente</label><select id="revAloc">
+      <option value="none"${cfg.aloc==='none'?' selected':''}>Deixar sem faturamento (recomendado)</option>
       <option value="cost"${cfg.aloc==='cost'?' selected':''}>Ratear pelo custo econômico</option>
       <option value="head"${cfg.aloc==='head'?' selected':''}>Ratear pelo quadro (funcionários-mês)</option>
     </select></div>
     <div class="field"><label for="revMeta">Meta de custo de pessoal sobre faturamento (%)</label><input type="number" id="revMeta" step="0.01" value="${cfg.meta||0}"></div>
   </div>
-  <div class="small" style="margin:8px 0 12px">O rateio distribui custo, não mede produtividade: rateado pelo quadro, o faturamento por funcionário fica igual em todos os setores; rateado pelo custo, apenas reproduz o custo por funcionário. Toda linha rateada é marcada como estimada.</div>
+  <div class="small" style="margin:8px 0 12px">Setores como Administrativo, Depósito ou Frente de Caixa não têm seção de venda no ERP. O padrão é deixá-los sem faturamento e julgá-los pela venda da loja por funcionário. O rateio distribui custo, não mede produtividade: rateado pelo quadro, o faturamento por funcionário fica igual em todos os setores; rateado pelo custo, apenas reproduz o custo por funcionário. Toda linha rateada é marcada como estimada.</div>
   ${revEditorGrid(comps)}
   <div class="actions"><button class="btn primary" id="revSave">Salvar configuração</button><button class="btn" id="revExport">Exportar faturamento.json</button><button class="btn danger" id="revClear">Apagar cadastro manual</button></div>
   <div class="shead" style="margin-top:14px"><h2>Colar do Excel</h2><span class="legend">Uma linha por lançamento</span></div>
@@ -1159,13 +1183,13 @@ function renderRevenue(){
   const hasMargin=top.margin>0;
   const cards=`<div class="cards">
     ${card('Faturamento do período',fM(top.revenue),`${esc(scopeLabel)} · margem bruta de ${hasMargin?fM(top.margin)+' ('+fP(top.marginRate,1,false)+')':'—'}${trend===null?'':` · ${fP(trend)} de ${first.label} a ${last.label}`}`,series.map(x=>x.revenue),'#0f766e')}
-    ${card('Margem bruta por funcionário-mês',revValueOrDash(top.marginPerEmployee),`Venda por funcionário-mês: ${revValueOrDash(top.revPerEmployee)} · ${fN(top.emMargin,1)} funcionários-mês com margem apurada`,series.map(x=>x.margin||0),'#1d4ed8')}
-    ${card('Folha sobre margem bruta',top.costOverMargin===null?'—':fP(top.costOverMargin,2,false),`Quanto da margem gerada é consumida pelo custo econômico de pessoal · sobre a venda: ${top.costShare===null?'—':fP(top.costShare,2,false)} ${revMetaBadge(top.costShare)}`,series.map(x=>x.marginShare||0),'#c2410c')}
+    ${card('Faturamento por funcionário-mês',revValueOrDash(top.revPerEmployee),`${fM(top.revenue)} dividido por ${fN(top.emMatched,1)} funcionários-mês, todo o quadro do recorte · margem por funcionário: ${revValueOrDash(top.marginPerEmployee)}`,series.map(x=>x.revPerEmployee||0),'#1d4ed8')}
+    ${card('Folha sobre faturamento',top.costShare===null?'—':fP(top.costShare,2,false),`Custo econômico de ${fM(top.costMatched)} sobre a venda ${revMetaBadge(top.costShare)} · sobre a margem bruta: ${top.costOverMargin===null?'—':fP(top.costOverMargin,2,false)}`,series.map(x=>x.share||0),'#c2410c')}
     ${card('Margem menos pessoal',fM(top.result),`Margem bruta de ${fM(top.margin)} menos ${fM(top.costMargin)} de custo econômico${trendShare===null?'':` · ${fP(trendShare,2)} p.p. de folha sobre venda no período`}`,series.map(x=>(x.margin||0)-(x.cost||0)),top.result>=0?'#15803d':'#b91c1c')}
   </div>`;
   const analysis=`<div class="analysis">
     <div class="aitem"><div class="ak">Faturamento por R$ 1 de folha</div><div class="av">${top.leverage===null?'—':'R$ '+fN(top.leverage,2)}</div><div class="as">Venda gerada por real de custo econômico de pessoal.</div></div>
-    <div class="aitem"><div class="ak">Margem bruta média</div><div class="av">${top.marginRate===null?'—':fP(top.marginRate,2,false)}</div><div class="as">Venda menos CMV, conforme o relatório do ERP.</div></div>
+    <div class="aitem"><div class="ak">Margem bruta por funcionário-mês</div><div class="av">${revValueOrDash(top.marginPerEmployee)}</div><div class="as">Margem média de ${top.marginRate===null?'—':fP(top.marginRate,2,false)} sobre a venda.</div></div>
     <div class="aitem"><div class="ak">Horas extras sobre faturamento</div><div class="av ${top.overtimeShare>1?'warn':''}">${top.overtimeShare===null?'—':fP(top.overtimeShare,2,false)}</div><div class="as">Peso das horas extras e reflexos na venda do período.</div></div>
     <div class="aitem"><div class="ak">Cobertura do faturamento</div><div class="av ${top.coverage>=99?'good':top.coverage>=70?'warn':'bad'}">${fP(top.coverage,1,false)}</div><div class="as">${top.revenueEstimated>0?`${fM(top.revenueEstimated)} vem de rateio estimado.`:'Nenhum valor estimado por rateio no recorte.'}</div></div>
   </div>`;
